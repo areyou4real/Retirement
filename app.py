@@ -12,227 +12,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# =========================
-# AUTH BLOCK — Email OTP (SendGrid preferred, SMTP fallback)
-# =========================
-import re, time, smtplib, ssl, hashlib, hmac, secrets
-from email.mime.text import MIMEText
-
-OTP_LENGTH = 6
-OTP_TTL_SECONDS = 5 * 60       # 5 minutes
-RESEND_COOLDOWN = 30           # seconds
-MAX_ATTEMPTS = 5
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-def _use_sendgrid() -> bool:
-    return bool(st.secrets.get("SENDGRID_API_KEY"))
-
-
-def _send_email_via_sendgrid(to_email: str, subject: str, html_body: str):
-    import requests  # imported here to avoid dependency if using SMTP path
-    api_key = st.secrets["SENDGRID_API_KEY"]
-    sender = st.secrets["SENDER_EMAIL"]
-    sender_name = st.secrets.get("SENDER_NAME", "App")
-
-    data = {
-        "personalizations": [{"to": [{"email": to_email}]}],
-        "from": {"email": sender, "name": sender_name},
-        "subject": subject,
-        "content": [{"type": "text/html", "value": html_body}],
-    }
-    resp = requests.post(
-        "https://api.sendgrid.com/v3/mail/send",
-        headers={"Authorization": f"Bearer {api_key}"},
-        json=data,
-        timeout=10,
-    )
-    if resp.status_code not in (200, 202):
-        raise RuntimeError(f"SendGrid error: {resp.status_code} {resp.text}")
-
-
-def _send_email_via_smtp(to_email: str, subject: str, html_body: str):
-    host = st.secrets["SMTP_HOST"]
-    port = int(st.secrets.get("SMTP_PORT", 587))
-    username = st.secrets["SMTP_USERNAME"]
-    password = st.secrets["SMTP_PASSWORD"]
-    sender = st.secrets["SENDER_EMAIL"]
-    sender_name = st.secrets.get("SENDER_NAME", "App")
-
-    msg = MIMEText(html_body, "html")
-    msg["Subject"] = subject
-    msg["From"] = f"{sender_name} <{sender}>"
-    msg["To"] = to_email
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP(host, port) as server:
-        server.starttls(context=context)
-        server.login(username, password)
-        server.send_message(msg)
-
-
-def _send_email(to_email: str, subject: str, html_body: str):
-    if _use_sendgrid():
-        _send_email_via_sendgrid(to_email, subject, html_body)
-    else:
-        _send_email_via_smtp(to_email, subject, html_body)
-
-
-def _gen_otp(n=OTP_LENGTH) -> str:
-    return "".join(secrets.choice("0123456789") for _ in range(n))
-
-
-def _hash_otp(otp: str, salt: bytes) -> str:
-    return hmac.new(salt, otp.encode("utf-8"), hashlib.sha256).hexdigest()
-
-
-def _validate_phone(raw: str) -> bool:
-    digits = re.sub(r"\D", "", raw)
-    return 7 <= len(digits) <= 15
-
-
-def show_auth_gate(app_title: str = "Retirement FI Calculator") -> bool:
-    """
-    Renders a login/OTP flow in the sidebar and returns True if the user is verified.
-    Usage:
-        verified = show_auth_gate("Your App")
-        if not verified:
-            st.title("Welcome 👋")
-            st.write("Please sign in from the left sidebar to continue.")
-            st.stop()
-    """
-    st.sidebar.title("Sign in")
-
-    if "auth" not in st.session_state:
-        st.session_state.auth = {
-            "stage": "collect",           # collect -> otp -> verified
-            "name": "",
-            "email": "",
-            "phone": "",
-            "otp_salt": None,
-            "otp_hash": None,
-            "otp_expires": 0,
-            "last_sent": 0,
-            "attempts": 0,
-        }
-
-    a = st.session_state.auth
-
-    if a.get("stage") == "verified":
-        st.sidebar.success(f"Signed in as {a['name']} ({a['email']})")
-        if st.sidebar.button("Sign out"):
-            st.session_state.pop("auth", None)
-            st.rerun()
-        return True
-
-    if a.get("stage") == "collect":
-        with st.sidebar.form("collect_form", clear_on_submit=False):
-            name = st.text_input("Full name", value=a["name"])
-            email = st.text_input("Email", value=a["email"])
-            phone = st.text_input("Contact number", value=a["phone"])
-            submit = st.form_submit_button("Send OTP")
-
-        if submit:
-            if not name.strip():
-                st.sidebar.error("Please enter your name.")
-            elif not EMAIL_RE.match(email):
-                st.sidebar.error("Please enter a valid email address.")
-            elif not _validate_phone(phone):
-                st.sidebar.error("Please enter a valid contact number.")
-            else:
-                now = time.time()
-                if now - a["last_sent"] < RESEND_COOLDOWN:
-                    st.sidebar.warning("Please wait a few seconds before requesting another OTP.")
-                else:
-                    otp = _gen_otp()
-                    salt = secrets.token_bytes(16)
-                    a.update({
-                        "otp_salt": salt,
-                        "otp_hash": _hash_otp(otp, salt),
-                        "otp_expires": now + OTP_TTL_SECONDS,
-                        "last_sent": now,
-                        "attempts": 0,
-                        "name": name.strip(),
-                        "email": email.strip(),
-                        "phone": phone.strip(),
-                        "stage": "otp",
-                    })
-                    try:
-                        html = f"""
-                        <div style=\"font-family:Inter,system-ui,Segoe UI,sans-serif;\">
-                          <h2>{app_title} – Your OTP</h2>
-                          <p>Hi {a['name']},</p>
-                          <p>Your one-time passcode is:</p>
-                          <p style=\"font-size:24px;letter-spacing:3px;\"><b>{otp}</b></p>
-                          <p>This code will expire in {OTP_TTL_SECONDS//60} minutes.</p>
-                          <p>If you didn’t request this, you can ignore this email.</p>
-                        </div>
-                        """
-                        _send_email(a["email"], f"{app_title}: Your OTP", html)
-                        st.sidebar.success(f"OTP sent to {a['email']}. Check your inbox/spam.")
-                    except Exception as e:
-                        a["stage"] = "collect"
-                        st.sidebar.error(f"Failed to send OTP. {e}")
-
-    if a.get("stage") == "otp":
-        st.sidebar.info(f"Verifying {a['email']}")
-        remaining = max(0, int(a["otp_expires"] - time.time()))
-        with st.sidebar.form("otp_form"):
-            code = st.text_input("Enter OTP", max_chars=OTP_LENGTH)
-            cta = st.form_submit_button("Verify")
-
-        cols = st.sidebar.columns(2)
-        if cols[0].button("Resend OTP", disabled=(time.time() - a["last_sent"] < RESEND_COOLDOWN)):
-            now = time.time()
-            if now - a["last_sent"] < RESEND_COOLDOWN:
-                st.sidebar.warning("Please wait a few seconds before resending.")
-            else:
-                otp = _gen_otp()
-                a["otp_salt"] = secrets.token_bytes(16)
-                a["otp_hash"] = _hash_otp(otp, a["otp_salt"])
-                a["otp_expires"] = now + OTP_TTL_SECONDS
-                a["last_sent"] = now
-                a["attempts"] = 0
-                try:
-                    html = f"""
-                    <div style=\"font-family:Inter,system-ui,Segoe UI,sans-serif;\">
-                      <h2>{app_title} – Your OTP (Resent)</h2>
-                      <p>Hi {a['name']},</p>
-                      <p>Your new one-time passcode is:</p>
-                      <p style=\"font-size:24px;letter-spacing:3px;\"><b>{otp}</b></p>
-                      <p>This code will expire in {OTP_TTL_SECONDS//60} minutes.</p>
-                    </div>
-                    """
-                    _send_email(a["email"], f"{app_title}: Your OTP (Resent)", html)
-                    st.sidebar.success("OTP resent.")
-                except Exception as e:
-                    st.sidebar.error(f"Failed to send OTP. {e}")
-
-        cols[1].write(f"Expires in: **{remaining}s**")
-
-        if cta:
-            a["attempts"] += 1
-            if a["attempts"] > MAX_ATTEMPTS:
-                st.sidebar.error("Too many attempts. Please resend a new OTP.")
-            elif time.time() > a["otp_expires"]:
-                st.sidebar.error("OTP expired. Please resend a new OTP.")
-            elif code and a["otp_hash"] == _hash_otp(code.strip(), a["otp_salt"]):
-                a["stage"] = "verified"
-                st.sidebar.success("Verified! You’re signed in.")
-                st.rerun()
-            else:
-                st.sidebar.error("Incorrect code. Try again.")
-
-    return False
-
-
-# ---- Gate the main UI ----
-verified = show_auth_gate("Retirement FI Calculator")
-if not verified:
-    st.title("Welcome 👋")
-    st.write("Please sign in from the left sidebar to continue.")
-    st.stop()
-
 # --- Theme Toggle (Light / Dark via CSS variables) ---
 if "ui_theme" not in st.session_state:
     st.session_state.ui_theme = "Dark"
@@ -320,20 +99,17 @@ inject_css(st.session_state.ui_theme)
 def _pow1p(x, n):
     return (1.0 + x) ** n
 
-
 def FV(rate: float, nper: float, pmt: float = 0.0, pv: float = 0.0, typ: int = 0) -> float:
     if abs(rate) < 1e-12:
         return -(pv + pmt * nper)
     g = _pow1p(rate, nper)
     return -(pv * g + pmt * (1 + rate * typ) * (g - 1) / rate)
 
-
 def PV(rate: float, nper: float, pmt: float = 0.0, fv: float = 0.0, typ: int = 0) -> float:
     if abs(rate) < 1e-12:
         return -(fv + pmt * nper)
     g = _pow1p(rate, nper)
     return -(fv + pmt * (1 + rate * typ) * (g - 1) / rate) / g
-
 
 def PMT(rate: float, nper: float, pv: float = 0.0, fv: float = 0.0, typ: int = 0) -> float:
     if nper <= 0:
@@ -437,7 +213,6 @@ coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_FI / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
 
-
 def fmt_money(x):
     try:
         return f"₹{x:,.0f}"
@@ -540,4 +315,3 @@ st.markdown(
 )
 
 st.caption("Made with Streamlit • Two‑pane UI • F-series engine • v3.5 two‑column layout")
-
