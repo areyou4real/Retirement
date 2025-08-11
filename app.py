@@ -61,7 +61,7 @@ def inject_css(theme: str = "Dark"):
 
           .pill {{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.9rem; }}
 
-          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 16px; padding: 16px; }}
+          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 1px; padding: 1px; }}
           .card h3 {{ margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }}
           .hint {{ color: var(--muted); font-size:.9rem; }}
 
@@ -126,7 +126,7 @@ st.markdown(
     f"""
     <div class='hero'>
       <div class='title'>Retirement Planner</div>
-      <div class='subtitle'>Minimal inputs. Clear outputs. Excel‑parity PV/FV/PMT with payments at period start where applicable.</div>
+      <div class='subtitle'>Please follow the instructions below</div>
       <div style='margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;'>
         <span class='pill'>Theme: <b>{st.session_state.ui_theme}</b></span>
       </div>
@@ -159,7 +159,7 @@ with st.container():
     # Rates (% p.a.) — with fixed returns before/after retirement
     r1, r2, r3, r4 = st.columns(4)
     with r1:
-        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Expected inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2:
         st.number_input("Return before retirement (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
     with r3:
@@ -255,4 +255,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("Made with Streamlit • Horizontal flow • Retirement wording • v4.0")
+st.caption("v4.0")
