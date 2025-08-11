@@ -14,6 +14,9 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+      /* Fonts */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=DM+Sans:wght@400;700&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
       :root {
         --bg: #0b0f1a;
         --card: #12182a;
@@ -28,41 +31,42 @@ st.markdown(
         --ring: #27304a;
         --chip: #1b2340;
       }
-      html, body, [class*="css"] { background: var(--bg); color: var(--text); }
+
+      html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      h1,h2,h3,h4 { font-family: 'Space Grotesk', Inter, sans-serif; letter-spacing:.2px; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+
       .hero {
-        padding: 18px 18px; border: 1px solid var(--ring); border-radius: 16px;
+        padding: 22px 22px; border: 1px solid var(--ring); border-radius: 16px;
         background:
           radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
           radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
           linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
       }
-      .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 800; letter-spacing:.2px; }
-      .subtitle { color: var(--muted); margin-top: 4px; }
+      .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.3rem); font-weight: 800; letter-spacing:.2px; }
+      .subtitle { color: var(--muted); margin-top: 6px; font-family: 'DM Sans', Inter, sans-serif; }
 
-      .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .kpi { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 14px; }
-      .kpi .label { color: var(--muted); font-size: .9rem; }
-      .kpi .value { font-size: 1.3rem; font-weight: 800; margin-top: 2px; }
+      .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.9rem; }
+
+      .grid { display:grid; gap: 14px; }
+      .grid.cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .grid.cols-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+      .card { background: var(--card); border:1px solid var(--ring); border-radius: 16px; padding: 16px; }
+      .card h3 { margin:0 0 6px 0; font-weight:700; }
+      .hint { color: var(--muted); font-size:.9rem; }
+
+      .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 14px; padding: 16px; }
+      .kpi .label { color: var(--muted); font-size: .95rem; }
+      .kpi .value { font-size: 1.35rem; font-weight: 800; margin-top: 2px; }
       .kpi .sub { color: var(--muted); font-size: .85rem; }
-
-      .pill { display:inline-flex; align-items:center; gap:8px; padding:4px 10px; border-radius:999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.85rem; }
-      .ok { color: var(--ok); }
-      .warn { color: var(--warn); }
-      .bad { color: var(--danger); }
-
-      .section { background: var(--card-2); border:1px solid var(--ring); border-radius: 16px; padding: 16px; }
-      .section h3 { margin:0 0 6px 0; }
-
-      .stTabs [data-baseweb="tab-list"] { gap: 6px; }
-      .stTabs [data-baseweb="tab"] { background: var(--card); border-radius: 10px; padding: 8px 12px; }
-      .stTabs [aria-selected="true"] { box-shadow: 0 0 0 1px var(--ring) inset; }
 
       .badge { padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
       .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
       .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
       .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
-      .divider { height:1px; background: var(--ring); margin: 10px 0; }
+      .divider { height:1px; background: var(--ring); margin: 12px 0; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -99,56 +103,85 @@ def PMT(rate: float, nper: float, pv: float = 0.0, fv: float = 0.0, typ: int = 0
     return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# Sidebar — Inputs (F3–F14)
+# INPUTS — clean, minimalist (no F-codes shown)
 # =========================
-with st.sidebar:
-    st.markdown("<div class='title'>🧮 FI Inputs</div>", unsafe_allow_html=True)
-    st.caption("Excel‑parity model • Enter annual rates as % (e.g., 7 for 7%)")
 
-    c1, c2 = st.columns(2)
+# Timeline
+st.markdown(
+    f"""
+    <div class='hero'>
+      <div class='title'>Financial Independence Planner</div>
+      <div class='subtitle'>Minimal inputs. Clear outputs. Calculations follow Excel's PV/FV/PMT with payments at the beginning where applicable.</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+
+col_overview = st.container()
+with col_overview:
+    st.markdown("### Your Plan")
+    st.caption("Fill these once — everything else updates live.")
+
+    st.markdown("<div class='grid cols-3'>", unsafe_allow_html=True)
+
+    # Card 1 — Timeline
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("<h3>Timeline</h3>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
     with c1:
-        F3 = st.number_input("F3 • Current age", min_value=16, max_value=80, value=25, step=1, help="Your age today")
+        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
     with c2:
-        F4 = st.number_input("F4 • Target FI age", min_value=F3+1, max_value=90, value=60, step=1, help="Age when you want financial independence")
-
-    F5 = F4 - F3
-    st.markdown(f"<span class='pill'>F5 • Years left: <b>{F5}</b></span>", unsafe_allow_html=True)
-
-    c3, c4 = st.columns(2)
+        age_fi = st.number_input("Target FI age", min_value=age_now+1, max_value=90, value=60, step=1)
     with c3:
-        F6 = st.number_input("F6 • Life expectancy", min_value=F4+1, max_value=110, value=90, step=1, help="Planning horizon")
-    with c4:
-        use_mx12 = st.checkbox("Set yearly expenses = monthly × 12", value=True)
+        life_expectancy = st.number_input("Life expectancy", min_value=age_fi+1, max_value=110, value=90, step=1)
+    years_left = age_fi - age_now
+    st.caption(f"Years to FI: **{years_left}** • Years post‑FI: **{max(life_expectancy-age_fi,0)}**")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
-    st.subheader("Rates (% p.a.)")
+    # Card 2 — Rates
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("<h3>Rates (% p.a.)</h3>", unsafe_allow_html=True)
     r1, r2, r3 = st.columns(3)
     with r1:
-        F7_pct = st.number_input("F7 • Expense inflation %", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f", help="Expected annual inflation for expenses")
+        infl_pct = st.number_input("Expense inflation", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f", help="Expected inflation for expenses")
     with r2:
-        F8_pct = st.number_input("F8 • Return before FI %", min_value=0.0, max_value=30.0, value=10.0, step=0.1, format="%.1f", help="Annual portfolio return till FI")
+        ret_pre_pct = st.number_input("Return before FI", min_value=0.0, max_value=30.0, value=10.0, step=0.1, format="%.1f")
     with r3:
-        F9_pct = st.number_input("F9 • Return after FI %", min_value=0.0, max_value=20.0, value=7.0, step=0.1, format="%.1f", help="Annual return during retirement")
-
+        ret_post_pct = st.number_input("Return after FI", min_value=0.0, max_value=20.0, value=7.0, step=0.1, format="%.1f")
     r4, _ = st.columns(2)
     with r4:
-        F10_pct = st.number_input("F10 • Return on existing %", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f", help="Annual return on current investments")
+        ret_exist_pct = st.number_input("Return on existing investments", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    # Card 3 — Cash flows
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("<h3>Cash flows (₹)</h3>", unsafe_allow_html=True)
+    cf1, cf2, cf3 = st.columns(3)
+    with cf1:
+        monthly_exp = st.number_input("Current monthly expenses", min_value=0.0, value=50000.0, step=1000.0)
+    with cf2:
+        use_mx12 = st.checkbox("Set yearly = monthly × 12", value=True)
+        yearly_exp_default = monthly_exp * 12.0
+        yearly_exp = st.number_input("Yearly expenses", min_value=0.0, value=yearly_exp_default if use_mx12 else max(yearly_exp_default, 600000.0), step=5000.0)
+    with cf3:
+        current_invest = st.number_input("Current investments", min_value=0.0, value=1000000.0, step=10000.0)
+    _, cf4 = st.columns([2,1])
+    with cf4:
+        legacy_goal = st.number_input("Inheritance to leave", min_value=0.0, value=0.0, step=10000.0)
+    st.caption("Taxes not modeled in this version.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.subheader("Cash flows (₹)")
-    F11 = st.number_input("F11 • Current monthly expenses", min_value=0.0, value=50000.0, step=1000.0)
-    F12_default = F11 * 12.0
-    F12 = st.number_input("F12 • Yearly expenses", min_value=0.0, value=F12_default if use_mx12 else max(F12_default, 600000.0), step=5000.0)
-    F13 = st.number_input("F13 • Current investments", min_value=0.0, value=1000000.0, step=10000.0)
-    F14 = st.number_input("F14 • Inheritance to leave (not applied yet)", min_value=0.0, value=0.0, step=10000.0)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# Convert percentage inputs to decimals
-F7 = F7_pct / 100.0
-F8 = F8_pct / 100.0
-F9 = F9_pct / 100.0
-F10 = F10_pct / 100.0
+# =========================
+# Map UI -> internal F-variables (hidden from user)
+# =========================
+F3, F4, F6 = age_now, age_fi, life_expectancy
+F5 = years_left
+F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exist_pct/100.0
+F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # =========================
 # Core Calculations (F17–F22)
@@ -161,7 +194,6 @@ F20 = F19 - FV_existing_at_FI
 F21 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22 = PV(F8, (F4 - F3), 0.0, -F20, 1)
 
-# Derived UI helpers
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_FI / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
@@ -173,72 +205,56 @@ def fmt_money(x):
         return str(x)
 
 # =========================
-# Hero + KPIs
+# KPIs
 # =========================
-st.markdown(
-    f"""
-    <div class='hero'>
-      <div class='title'>Financial Independence Planner</div>
-      <div class='subtitle'>Excel‑parity engine (F3–F22) with clean visuals. Tune inputs on the left; results update live.</div>
-      <div style='margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;'>
-        <span class='pill'>Years to FI: <b>{F5}</b></span>
-        <span class='pill'>Life horizon post‑FI: <b>{max(F6-F4,0)}</b> years</span>
-        <span class='pill'>Coverage now: <b>{coverage*100:.1f}%</b> <span class='{status_class}'>●</span></span>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+col_k1, col_k2, col_k3 = st.columns(3)
+with col_k1:
+    st.markdown("<div class='kpi'><div class='label'>Required corpus at FI</div><div class='value'>" + fmt_money(F19) + "</div><div class='sub'>Covers expenses till life expectancy</div></div>", unsafe_allow_html=True)
+with col_k2:
+    st.markdown("<div class='kpi'><div class='label'>Monthly SIP needed</div><div class='value'>" + fmt_money(F21) + "</div><div class='sub'>Contributed at the start of each month</div></div>", unsafe_allow_html=True)
+with col_k3:
+    st.markdown("<div class='kpi'><div class='label'>Lumpsum needed today</div><div class='value'>" + fmt_money(F22) + "</div><div class='sub'>If you prefer a one‑time investment</div></div>", unsafe_allow_html=True)
 
-st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-c_kpi1, c_kpi2, c_kpi3 = st.columns(3)
-with c_kpi1:
-    st.markdown("<div class='kpi'><div class='label'>Required Corpus at FI (F19)</div><div class='value'>" + fmt_money(F19) + "</div><div class='sub'>Covers expenses till life expectancy</div></div>", unsafe_allow_html=True)
-with c_kpi2:
-    st.markdown("<div class='kpi'><div class='label'>Monthly SIP Needed (F21)</div><div class='value'>" + fmt_money(F21) + "</div><div class='sub'>Contribute at start of each month</div></div>", unsafe_allow_html=True)
-with c_kpi3:
-    st.markdown("<div class='kpi'><div class='label'>Lumpsum Needed Today (F22)</div><div class='value'>" + fmt_money(F22) + "</div><div class='sub'>If you prefer a one‑time investment</div></div>", unsafe_allow_html=True)
-
-# Coverage / Gap visual
-st.markdown("<div class='section'>", unsafe_allow_html=True)
+# Coverage section
+st.markdown("<div class='card'>", unsafe_allow_html=True)
 colA, colB = st.columns([1.2, 1])
 with colA:
-    st.markdown("### Readiness Gauge")
+    st.markdown("### Readiness gauge")
     st.caption("How much of the required corpus is already covered by your existing investments (grown to FI)")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
-
 with colB:
     st.markdown("### Snapshot")
-    st.metric("Existing corpus at FI (FV)", fmt_money(FV_existing_at_FI))
+    st.metric("Existing corpus at FI (future value)", fmt_money(FV_existing_at_FI))
     gap = max(F20, 0.0)
-    st.metric("Gap to fund (F20)", fmt_money(gap))
+    st.metric("Gap to fund", fmt_money(gap))
     if F20 < 0:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
-# Tabs: Overview • Inputs • Methodology
+# Tabs: Overview • Methodology
 # =========================
 
-t1, t2, t3 = st.tabs(["Overview", "Inputs & Results", "Methodology"])
+t1, t3 = st.tabs(["Overview", "Methodology"])
 
 with t1:
     c1, c2 = st.columns([1.4, 1])
     with c1:
-        st.markdown("#### Key Numbers")
+        st.markdown("#### Key numbers")
         tbl = pd.DataFrame(
             {
                 "Metric": [
-                    "F17 Net real return post‑FI",
-                    "F18 Annual expenses at FI",
-                    "F19 Required corpus at FI",
-                    "FV of current investments at FI",
-                    "F20 Gap to fund",
-                    "F21 Monthly SIP needed",
-                    "F22 Lumpsum needed today",
+                    "Net real return after FI",
+                    "Annual expenses at FI",
+                    "Required corpus at FI",
+                    "Future value of current investments at FI",
+                    "Gap to fund",
+                    "Monthly SIP needed",
+                    "Lumpsum needed today",
                 ],
                 "Value": [
                     f"{F17*100:.2f}%",
@@ -254,68 +270,21 @@ with t1:
         st.dataframe(tbl, use_container_width=True, height=300)
 
     with c2:
-        st.markdown("#### Actions")
-        st.write("Download a copy of your results for record‑keeping.")
+        st.markdown("#### Export")
         export = tbl.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download overview (CSV)", data=export, file_name="fi_overview.csv", mime="text/csv")
         st.caption("Tip: Re‑run with different assumptions and keep multiple CSVs.")
 
-with t2:
-    st.markdown("#### Audit: F‑Series Fields")
-    data = {
-        "Field": [
-            "F3 Current age", "F4 FI age", "F5 Years left", "F6 Life expectancy",
-            "F7 Inflation (p.a.)", "F8 Return pre‑FI (p.a.)", "F9 Return post‑FI (p.a.)", "F10 Return existing (p.a.)",
-            "F11 Monthly expenses", "F12 Yearly expenses", "F13 Current investments", "F14 Inheritance (not used)",
-            "F17 Net real return post‑FI", "F18 Annual expenses at FI", "F19 Required corpus", "FV existing at FI",
-            "F20 Gap to fund", "F21 SIP (monthly)", "F22 Lumpsum today",
-        ],
-        "Value": [
-            F3, F4, F5, F6,
-            F7, F8, F9, F10,
-            F11, F12, F13, F14,
-            F17, F18, F19, FV_existing_at_FI,
-            F20, F21, F22,
-        ],
-    }
-    df = pd.DataFrame(data)
-
-    def _fmt(field, val):
-        if isinstance(val, (int,)):
-            return f"{val}"
-        if any(field.startswith(x) for x in ["F7 ", "F8 ", "F9 ", "F10 ", "F17 "]):
-            return f"{val*100:.2f}%"
-        if any(field.startswith(x) for x in ["F11 ", "F12 ", "F13 ", "F14 ", "F18 ", "F19 ", "F20 ", "F21 ", "F22 "]):
-            return f"{val:,.0f}"
-        return f"{val}"
-
-    df_display = pd.DataFrame({"Field": data["Field"], "Value": [ _fmt(f, v) for f, v in zip(data["Field"], data["Value"]) ]})
-    st.dataframe(df_display, use_container_width=True, height=420)
-
-    csv_bytes = df_display.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download F‑series (CSV)", data=csv_bytes, file_name="fi_results_F3_F22.csv", mime="text/csv")
-
 with t3:
-    st.markdown("#### Notes & Assumptions")
+    st.markdown("#### Notes & assumptions")
     st.info(
         """
-        • **Excel parity**: `PV`, `FV`, and `PMT` mirror Excel behaviour with payments at the **beginning** of the period (`type=1`) where your formulas specify it.  
-        • **Rates**: Enter annual percentages; the model converts to decimals internally.  
-        • **Signs**: We follow Excel cash‑flow sign convention.  
-        • **Inheritance (F14)**: Captured for future extension (e.g., target legacy corpus) but **not** applied yet.  
-        • **Validation**: Enforced `F4 > F3` and `F6 > F4` via input bounds.
+        • Calculations mirror Excel: `PV`, `FV`, and `PMT` with payments at the **beginning** of the period where applicable.  
+        • All rates are annual; the app converts to decimals internally.  
+        • Signs follow Excel cash‑flow convention.  
+        • Inheritance/legacy is captured for future logic but not yet applied.  
+        • Constraints enforced: Target FI age > current age; Life expectancy > FI age.
         """
     )
-    with st.expander("What each output means", expanded=False):
-        st.markdown(
-            """
-            - **F17**: Net *real* return after FI — used to discount post‑retirement cash flows.  
-            - **F18**: Annual expenses at FI, inflated from today at F7.  
-            - **F19**: Present value (at FI) of all future expenses until life expectancy.  
-            - **F20**: Portion of F19 not covered by your current investments (grown to FI).  
-            - **F21**: Monthly SIP required (paid at **start** of month) to close the gap by FI.  
-            - **F22**: Lumpsum needed today to close the gap by FI.
-            """
-        )
 
-st.caption("Made with Streamlit • F3–F22 engine • v1.5 UI refresh")
+st.caption("Made with Streamlit • Minimal UI • F-series engine under the hood • v2.0")
