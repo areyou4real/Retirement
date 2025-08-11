@@ -210,7 +210,7 @@ with colA:
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
 
 with colB:
-    st.markdown("### Snapshot")n    
+    st.markdown("### Snapshot")
     st.metric("Existing corpus at FI (FV)", fmt_money(FV_existing_at_FI))
     gap = max(F20, 0.0)
     st.metric("Gap to fund (F20)", fmt_money(gap))
