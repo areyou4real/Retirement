@@ -71,7 +71,7 @@ def inject_css(theme: str = "Dark"):
           .pill {{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:9999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.9rem; }}
 
           /* Cards — narrower */
-          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 124px; padding: 8px 2px; max-width: 400px; margin: 0 auto; }}
+          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 124px; padding: 0px 2px; max-width: 400px; margin: 0 auto; }}
           .card h3 {{ margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; text-align: center;}}
           .hint {{ color: var(--muted); font-size:.9rem; }}
 
