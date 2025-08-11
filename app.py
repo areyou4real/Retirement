@@ -61,7 +61,7 @@ def inject_css(theme: str = "Dark"):
 
           .pill {{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.9rem; }}
 
-          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 8px; padding: 2px; }}
+          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 16px; padding: 16px; }}
           .card h3 {{ margin:0 0 8px 0; font-weight:700; }}
           .hint {{ color: var(--muted); font-size:.9rem; }}
 
