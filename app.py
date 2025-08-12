@@ -334,4 +334,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.3 — rows (3 per), fixed returns as captions, smaller cards, equal input sizes")
+st.caption("v4.3")
