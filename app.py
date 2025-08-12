@@ -468,4 +468,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v5.0 — Same design preserved • Inputs card removed • Hero updated verbatim • Indian formatting + animations")
+st.caption("v5.0 by Dheer")
