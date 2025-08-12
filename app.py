@@ -78,7 +78,7 @@ def inject_css():
           .subtitle { color: var(--muted); margin-top: 6px; }
 
           .card { background: var(--card); border:1px solid var(--ring); border-radius: 14px; max-width: 960px; margin: 0 auto; text-align: center; }
-          .card h3 { margin:0 0 6px 0; font-weight:600; font-size:50px; letter-spacing:.2px; }
+          .card h3 { margin:0 0 6px 0; font-weight:600; font-size:30px; letter-spacing:.2px; }
           .hint { color: var(--muted); font-size:.9rem; }
 
           .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }
