@@ -85,6 +85,9 @@ def inject_css():
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
 
+          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
+          .hero .subtitle { color: var(--muted); margin-top: 6px; }
+
           /* Smaller cards */
           .card {
             background: var(--card);
@@ -194,6 +197,31 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
+# Number formatting (Indian system)
+# =========================
+def fmt_money_indian(x):
+    """Format numbers as ₹ in Indian numbering system (##,##,###)."""
+    try:
+        n = int(round(float(x)))
+    except Exception:
+        return f"₹{x}"
+    s = str(abs(n))
+    if len(s) <= 3:
+        out = s
+    else:
+        last3 = s[-3:]
+        rest = s[:-3]
+        parts = []
+        while len(rest) > 2:
+            parts.insert(0, rest[-2:])
+            rest = rest[:-2]
+        if rest:
+            parts.insert(0, rest)
+        out = ",".join(parts) + "," + last3
+    sign = "-" if n < 0 else ""
+    return f"₹{sign}{out}"
+
+# =========================
 # HERO
 # =========================
 st.markdown(
@@ -277,20 +305,18 @@ status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class 
 # OUTPUTS (below inputs)
 # =========================
 
-def fmt_money(x):
-    try:
-        return f"₹{x:,.0f}"
-    except Exception:
-        return str(x)
-
 # --- KPI Row (rendered in main DOM) ---
+if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
+if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
+if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
+
 k1, k2, k3 = st.columns(3)
 
 with k1:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
-        f"<div id='kpi1' class='value'>₹{int(st.session_state.get('prev_F19', 0)):,}</div>"
+        f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
         f"<div class='sub'>Covers expenses till life expectancy</div>"
         f"</div>",
         unsafe_allow_html=True,
@@ -299,7 +325,7 @@ with k2:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Monthly SIP needed</div>"
-        f"<div id='kpi2' class='value'>₹{int(st.session_state.get('prev_F21', 0)):,}</div>"
+        f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
         f"<div class='sub'>Contributed at the start of each month</div>"
         f"</div>",
         unsafe_allow_html=True,
@@ -308,22 +334,47 @@ with k3:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Lumpsum needed today</div>"
-        f"<div id='kpi3' class='value'>₹{int(st.session_state.get('prev_F22', 0)):,}</div>"
+        f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
         f"<div class='sub'>If you prefer a one‑time investment</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
 
-# Animate those numbers using a tiny hidden component that targets the parent DOM
+# Animate numbers (CountUp with Indian formatter) targeting parent DOM
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
     <script>
       (function() {{
+        function formatIndian(num) {{
+          try {{
+            num = Math.round(num);
+            const sign = num < 0 ? "-" : "";
+            let s = Math.abs(num).toString();
+            if (s.length <= 3) return "₹" + sign + s;
+            const last3 = s.slice(-3);
+            let rest = s.slice(0, -3);
+            const parts = [];
+            while (rest.length > 2) {{
+              parts.unshift(rest.slice(-2));
+              rest = rest.slice(0, -2);
+            }}
+            if (rest.length) parts.unshift(rest);
+            return "₹" + sign + parts.join(",") + "," + last3;
+          }} catch (e) {{
+            return "₹" + num;
+          }}
+        }}
+
         function run(id, end, start) {{
           const el = window.parent.document.getElementById(id);
           if (!el || typeof countUp === 'undefined') return;
-          const opts = {{ duration: 1.2, separator: ',', decimal: '.', prefix: '₹' }};
+          const opts = {{
+            duration: 1.2,
+            separator: ',',     // not used because formattingFn overrides
+            decimal: '.',
+            formattingFn: formatIndian
+          }};
           try {{
             const a = new countUp.CountUp(el, end, {{...opts, startVal: start}});
             a.start();
@@ -338,7 +389,7 @@ st_html(
     height=0,
 )
 
-# Update prev values for next run
+# Update prev values for next run (for smooth animation)
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(F21)
 st.session_state.prev_F22 = int(F22)
@@ -355,9 +406,9 @@ with cA:
     st.markdown("</div>", unsafe_allow_html=True)
 with cB:
     st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
-    st.metric("Existing corpus at retirement (future value)", fmt_money(FV_existing_at_ret))
+    st.metric("Existing corpus at retirement (future value)", fmt_money_indian(FV_existing_at_ret))
     gap = max(F20, 0.0)
-    st.metric("Gap to fund", fmt_money(gap))
+    st.metric("Gap to fund", fmt_money_indian(gap))
     if F20 < 0:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -375,8 +426,8 @@ st.markdown(
     f"""
     <div class='sticky-summary'>
       <div class='summary-grid'>
-        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money(F19)}</div></div>
-        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money(F21)}</div></div>
+        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money_indian(F19)}</div></div>
+        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money_indian(F21)}</div></div>
         <div><div class='hint'>Coverage now</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{coverage*100:.1f}%</div></div>
       </div>
     </div>
@@ -384,4 +435,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.7 — KPI animation without iframe styling issues (exact .kpi styles)")
+st.caption("v4.8 — Indian-number formatting across app + animated KPIs")
