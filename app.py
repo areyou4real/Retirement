@@ -77,7 +77,7 @@ def inject_css():
           .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }
           .subtitle { color: var(--muted); margin-top: 6px; }
 
-          .card { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 140px 160px; max-width: 960px; margin: 0 auto; }
+          .card { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 10px 10px; max-width: 960px; margin: 0 auto; text-align: center; }
           .card h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
           .hint { color: var(--muted); font-size:.9rem; }
 
