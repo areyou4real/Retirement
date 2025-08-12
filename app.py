@@ -72,6 +72,7 @@ def inject_css():
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
+          /* === HERO (exactly as provided) === */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -85,7 +86,10 @@ def inject_css():
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
 
-          /* Smaller cards */
+          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
+          .hero .subtitle { color: var(--muted); margin-top: 6px; }
+
+          /* Smaller cards (unchanged) */
           .card {
             background: var(--card);
             border:1px solid var(--ring);
@@ -107,8 +111,6 @@ def inject_css():
             text-align:center;
           }
 
-          .hint { color: var(--muted); font-size:.9rem; }
-
           /* EXACT KPI styles (shared) */
           .kpi {
             background: var(--card-2);
@@ -119,12 +121,11 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
 
-          /* Snapshot metric styles (inside card) */
+          /* Snapshot metric styles */
           .snap-metric { margin: 6px 0 10px; }
           .snap-metric .label { color: var(--muted); font-size:.92rem; }
           .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
@@ -134,7 +135,7 @@ def inject_css():
           .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
           .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
-          /* Inputs */
+          /* Inputs (unchanged) */
           .stNumberInput, .stTextInput { width: 100% !important; }
           .stNumberInput input, .stTextInput input {
             border:1px solid var(--ring) !important; border-radius: 10px !important;
@@ -146,7 +147,7 @@ def inject_css():
           .stNumberInput input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
           .stNumberInput input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
-          /* Sticky summary bar */
+          /* Sticky summary bar (unchanged) */
           .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
             background: var(--card-2); border-top:1px solid var(--ring);
@@ -154,11 +155,10 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .sticky-summary:hover { transform: scale(1.01); box-shadow: 0 -2px 10px rgba(0,0,0,0.08); }
-
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA button */
+          /* CTA button (unchanged) */
           a { text-decoration: none; }
           .start-btn {
             display:block;
@@ -176,6 +176,9 @@ def inject_css():
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
           }
+
+          /* Width limiter for inputs (no card) */
+          .section { max-width: 760px; margin: 0 auto 12px; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -239,10 +242,10 @@ st.markdown(
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # =========================
-# INPUTS (Single card, 3-per-row layout)
+# INPUTS (NO title card; same width, same rows)
 # =========================
 with st.container():
-    st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
 
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
@@ -342,7 +345,7 @@ with k3:
         unsafe_allow_html=True,
     )
 
-# --- Preparedness & Snapshot (Preparedness unchanged; Snapshot animated) ---
+# --- Preparedness & Snapshot ---
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
@@ -448,7 +451,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sticky Summary Footer
+# Sticky Summary Footer (unchanged)
 st.markdown(
     f"""
     <div class='sticky-summary'>
@@ -462,4 +465,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.9 — Indian formatting + animated KPIs & Snapshot")
+st.caption("v5.0 — Same design preserved • Inputs card removed • Hero updated verbatim • Indian formatting + animations")
