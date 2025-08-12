@@ -32,8 +32,8 @@ def inject_css():
             --muted: #5d6473;
             --ring: #e7eaf3;
             --chip: #eef2ff;
-            --accent: #2563EB;
-            --accent-hover: #1E40AF;
+            --accent: #2563EB;           /* blue-600 */
+            --accent-hover: #1E40AF;     /* blue-800 */
             --warn: #fbbc04;
             --danger: #ff6b6b;
             --ok: #34d399;
@@ -49,7 +49,7 @@ def inject_css():
               --muted: #9aa4b2;
               --ring: #27304a;
               --chip: #1b2340;
-              --accent: #3B82F6;         /* slightly brighter for dark */
+              --accent: #3B82F6;         /* slightly brighter blue for dark */
               --accent-hover: #2563EB;
               --warn: #fbbc04;
               --danger: #ff6b6b;
@@ -78,30 +78,29 @@ def inject_css():
               radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
               radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
               linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
-            max-width: 960px;
+            max-width: 840px;
             margin: 0 auto;
             text-align: center;
           }
           .hero .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* FIXED: cards now have padding and don't force center on all text */
           .card {
             background: var(--card);
             border:1px solid var(--ring);
             border-radius: 12px;
-            padding: 16px 16px;
+            padding: 18px 20px;
             width: 100%;
-            max-width: 840px;          /* narrower so it hugs content better */
-            margin: 0 auto 12px;       /* center + breathing room below */
-            box-sizing: border-box;    /* ensures padding is included in width */
+            max-width: 840px;          /* unified narrower width */
+            margin: 0 auto 12px;
+            box-sizing: border-box;
           }
           .card h3 {
-            margin:0 0 6px 0;
+            margin:0 0 8px 0;
             font-weight:600;
-            font-size:24px;            /* sleeker title size */
+            font-size:24px;
             letter-spacing:.2px;
-            text-align:center;         /* only the title is centered */
+            text-align:center;         /* only headings centered */
           }
 
           .hint { color: var(--muted); font-size:.9rem; }
@@ -124,19 +123,16 @@ def inject_css():
 
           .divider { height:1px; background: var(--ring); margin: 12px 0; }
 
-          /* Inputs — equal width & consistent look */
-          .stNumberInput, .stTextInput { width: 100% !important; }
-          .stNumberInput input, .stTextInput input {
+          /* Inputs — vertical, equal width, consistent look */
+          .stNumberInput, .stTextInput, .stSelectbox, .stTextArea { width: 100% !important; }
+          .stNumberInput input, .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
             border:1px solid var(--ring) !important; border-radius: 10px !important;
             padding: 12px !important; width: 100% !important;
           }
-          .stNumberInput input:focus, .stTextInput input:focus {
+          .stNumberInput input:focus, .stTextInput input:focus, .stTextArea textarea:focus {
             box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important;
             border-color: var(--accent) !important;
           }
-
-          /* Ensure cards inside Streamlit columns don't get weirdly narrow */
-          .stColumn .card { max-width: 100%; }
 
           /* Sticky summary bar */
           .sticky-summary {
@@ -148,19 +144,15 @@ def inject_css():
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
           /* CTA button */
-          a { text-decoration: none; } /* remove underline */
+          a { text-decoration: none; } /* remove underline globally for anchors */
           .start-btn {
             display:block;
-            margin:20px auto 40px; /* added bottom gap for summary grid */
+            margin:20px auto 40px;    /* bottom gap added to separate from summary */
             padding:14px 28px;
-            font-size:18px;
-            font-weight:600;
-            border:none;
-            border-radius:9999px;
-            background-color:var(--accent);
-            color:#fff;
-            cursor:pointer;
-            text-align:center;
+            font-size:18px; font-weight:600;
+            border:none; border-radius:9999px;
+            background-color:var(--accent); color:#fff;
+            cursor:pointer; text-align:center;
             transition: all 0.25s ease;
           }
           .start-btn:hover {
@@ -168,7 +160,6 @@ def inject_css():
             transform: scale(1.05);
             filter: brightness(1.08);
           }
-
         </style>
         """,
         unsafe_allow_html=True,
@@ -222,43 +213,31 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # HORIZONTAL FLOW: Inputs (top) • Outputs (bottom)
 # =========================
 
-# ---------- INPUTS (Single card) ----------
+# ---------- INPUTS (Single card, vertical layout) ----------
 with st.container():
     st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
 
-    # Timeline (equal-width columns)
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
-    with c2:
-        age_retire = st.number_input("Target retirement age", min_value=age_now+1, max_value=90, value=60, step=1)
-    with c3:
-        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=110, value=90, step=1)
+    # Timeline (stacked)
+    age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
+    age_retire = st.number_input("Target retirement age", min_value=age_now+1, max_value=90, value=60, step=1)
+    life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=110, value=90, step=1)
+
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
-    # Rates (% p.a.) — fixed before/after retirement
-    r1, r2, r3, r4 = st.columns(4)
-    with r1:
-        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
-    with r2:
-        st.number_input("Return before retirement (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
-    with r3:
-        st.number_input("Return after retirement (% p.a.) — fixed", value=6.0, step=0.0, disabled=True, format="%.1f")
-    with r4:
-        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
+    # Rates (% p.a.) — fixed before/after retirement (stacked)
+    infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+    st.number_input("Return before retirement (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+    st.number_input("Return after retirement (% p.a.) — fixed", value=6.0, step=0.0, disabled=True, format="%.1f")
+    ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
 
-    # Cash flows row — single line, yearly auto = 12×monthly (equal widths)
-    cf1, cf2, cf3 = st.columns(3)
-    with cf1:
-        monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
-    with cf2:
-        yearly_exp = monthly_exp * 12.0
-        st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
-    with cf3:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=1_000_000.0, step=10_000.0, format="%.0f")
-
+    # Cash flows — yearly auto = 12×monthly (stacked)
+    monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
+    yearly_exp = monthly_exp * 12.0
+    st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
+    current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=1_000_000.0, step=10_000.0, format="%.0f")
     legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
+
     st.caption("Taxes are not modeled in this version.")
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -341,4 +320,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.1 — compact cards, centered titles only, proper padding & hover")
+st.caption("v4.2 — vertical inputs, unified width, improved CTA and spacing")
