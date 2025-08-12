@@ -19,31 +19,17 @@ def inject_css():
     st.markdown(
         """
         <style>
-          /* Fonts */
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
             --navy: #1A1744;
             --orange: #FF844A;
             --white: #FFFFFF;
-
-            --bg: var(--white);
-            --card: var(--white);
-            --card-2: var(--white);
-            --text: var(--navy);
-            --muted: var(--navy);
-            --ring: var(--navy);
-            --chip: var(--white);
-            --accent: var(--orange);
-            --accent-hover: #e66f36; /* darker orange */
-            --warn: var(--orange);
-            --danger: var(--orange);
-            --ok: var(--orange);
           }
 
           html, body, [class*="css"] {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--white);
+            color: var(--navy);
             font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             font-size:16px; line-height:1.6;
           }
@@ -51,14 +37,17 @@ def inject_css():
           h1,h2,h3,h4 {
             font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
             letter-spacing:.2px; font-weight:600;
-            color: var(--navy);
           }
 
-          .mono, .num { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; color: var(--navy); }
+          .mono, .num {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+          }
 
+          /* HERO with orange gradient fade */
           .hero {
-            padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
-            background: var(--orange);
+            padding: 20px 18px; border: 1px solid var(--navy); border-radius: 14px;
+            background: linear-gradient(90deg, var(--orange) 0%, rgba(255,132,74,0) 100%);
             max-width: 760px;
             margin: 0 auto;
             text-align: center;
@@ -67,46 +56,32 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; }
           .hero .subtitle { color: var(--white); margin-top: 6px; }
 
-          .card {
-            background: var(--card-2);
-            border:1px solid var(--ring);
+          /* Cards with navy gradient */
+          .card, .kpi {
+            background: linear-gradient(135deg, var(--navy) 0%, rgba(26,23,68,0.85) 100%);
+            border:1px solid var(--navy);
             border-radius: 12px;
             padding: 14px 16px;
             width: 100%;
             max-width: 760px;
             margin: 0 auto 12px;
             box-sizing: border-box;
-            color: var(--navy);
+            color: var(--white);
           }
-          .card h3 {
-            margin:0 0 8px 0;
-            font-weight:600;
-            font-size:22px;
-            letter-spacing:.2px;
-            text-align:center;
+          .card h3, .kpi .label, .kpi .value, .kpi .sub, .hint {
+            color: var(--white);
           }
 
-          .hint { color: var(--navy); font-size:.9rem; }
-
-          .kpi {
-            background: var(--white);
-            border:1px solid var(--ring);
-            border-radius: 12px;
-            padding: 14px;
-            text-align:center;
-            color: var(--navy);
+          /* Badges on dark cards */
+          .badge {
+            padding: 3px 8px; border-radius: 9999px; font-weight: 700;
+            font-size:.78rem; border:1px solid var(--white);
+            background: transparent; color: var(--white);
           }
-          .kpi .label { color: var(--navy); font-size: .95rem; }
-          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; color: var(--navy); }
-          .kpi .sub { color: var(--navy); font-size: .85rem; }
-
-          .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--navy); background: var(--white); color: var(--navy); }
-
-          .divider { height:1px; background: var(--navy); margin: 10px 0; }
 
           /* Inputs */
           .stNumberInput input, .stTextInput input {
-            border:1px solid var(--navy) !important; border-radius: 10px !important;
+            border:1px solid var(--white) !important; border-radius: 10px !important;
             padding: 10px 12px !important;
             height: 44px !important;
             box-sizing: border-box;
@@ -121,9 +96,11 @@ def inject_css():
           /* Sticky summary bar */
           .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
-            background: var(--white); border-top:1px solid var(--navy);
-            padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 760px; margin: 0 auto;
-            color: var(--navy);
+            background: linear-gradient(135deg, var(--navy) 0%, rgba(26,23,68,0.85) 100%);
+            border-top:1px solid var(--white);
+            padding: 10px 14px; border-radius: 12px 12px 0 0;
+            max-width: 760px; margin: 0 auto;
+            color: var(--white);
           }
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
 
@@ -140,7 +117,7 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .start-btn:hover {
-            background-color:var(--accent-hover);
+            background-color:#e66f36;
             transform: scale(1.05);
             filter: brightness(1.08);
           }
