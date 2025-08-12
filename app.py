@@ -90,7 +90,7 @@ def inject_css():
             background: var(--card);
             border:1px solid var(--ring);
             border-radius: 12px;
-            padding: 16px 20px;
+            padding: 16px 16px;
             width: 100%;
             max-width: 840px;          /* narrower so it hugs content better */
             margin: 0 auto 12px;       /* center + breathing room below */
