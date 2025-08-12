@@ -148,13 +148,27 @@ def inject_css():
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
           /* CTA button */
+          a { text-decoration: none; } /* remove underline */
           .start-btn {
-            display:block; margin:16px auto 0; padding:14px 28px;
-            font-size:18px; font-weight:600; border:none; border-radius:9999px;
-            background-color:var(--accent); color:#fff; cursor:pointer; text-align:center;
-            transition: background-color 0.2s ease;
+            display:block;
+            margin:20px auto 40px; /* added bottom gap for summary grid */
+            padding:14px 28px;
+            font-size:18px;
+            font-weight:600;
+            border:none;
+            border-radius:9999px;
+            background-color:var(--accent);
+            color:#fff;
+            cursor:pointer;
+            text-align:center;
+            transition: all 0.25s ease;
           }
-          .start-btn:hover { background-color:var(--accent-hover); }
+          .start-btn:hover {
+            background-color:var(--accent-hover);
+            transform: scale(1.05);
+            filter: brightness(1.08);
+          }
+
         </style>
         """,
         unsafe_allow_html=True,
