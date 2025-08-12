@@ -136,13 +136,20 @@ def inject_css():
           .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
           /* Inputs (unchanged) */
+          /* Inputs — equal width & consistent look */
           .stNumberInput, .stTextInput { width: 100% !important; }
           .stNumberInput input, .stTextInput input {
-            border:1px solid var(--ring) !important; border-radius: 10px !important;
-            padding: 10px 12px !important; width: 100% !important;
-            height: 44px !important;
-            box-sizing: border-box;
-            transition: all 0.25s ease;
+          border:1px solid var(--ring) !important;
+          border-radius: 10px !important;
+          padding: 12px !important;
+          width: 100% !important;
+          font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
+          font-weight: 500;
+          letter-spacing: 0.2px;
+          }
+          .stNumberInput input:focus, .stTextInput input:focus {
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important;
+          border-color: var(--accent) !important;
           }
           .stNumberInput input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
           .stNumberInput input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
