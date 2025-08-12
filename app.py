@@ -109,6 +109,7 @@ def inject_css():
 
           .hint { color: var(--muted); font-size:.9rem; }
 
+          /* Original KPI card look (used outside iframe) */
           .kpi {
             background: var(--card-2);
             border:1px solid var(--ring);
@@ -118,7 +119,6 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
@@ -282,7 +282,7 @@ def fmt_money(x):
     except Exception:
         return str(x)
 
-# --- Animated KPI Row (CountUp.js) with theme-aware styles inside iframe ---
+# --- Animated KPI Row (CountUp.js) with EXACT original card styling inside iframe ---
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
@@ -293,14 +293,35 @@ kpi_html = f"""
 <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
 <style>
   :root {{
-    --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3;
+    --bg: #f7f8fc;
+    --card: #ffffff;
+    --card-2: #fbfcff;
+    --text: #0e1321;
+    --muted: #5d6473;
+    --ring: #e7eaf3;
   }}
   @media (prefers-color-scheme: dark) {{
-    :root {{ --bg:#0b0f1a; --card:#12182a; --card-2:#0e1424; --text:#e8edf5; --muted:#9aa4b2; --ring:#27304a; }}
+    :root {{
+      --bg: #0b0f1a;
+      --card: #12182a;
+      --card-2: #0e1424;
+      --text: #e8edf5;
+      --muted: #9aa4b2;
+      --ring: #27304a;
+    }}
   }}
-  body {{ margin:0; font-family:'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--text); background: transparent; }}
-  .kpi-grid {{ display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }}
-  .kpi-card {{
+  body {{
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color: var(--text);
+    background: transparent;
+  }}
+  .kpi-grid {{
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }}
+  .kpi {{
     background: var(--card-2);
     border: 1px solid var(--ring);
     border-radius: 12px;
@@ -308,26 +329,26 @@ kpi_html = f"""
     text-align: center;
     transition: all .25s ease;
   }}
-  .kpi-card:hover {{ transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }}
-  .kpi-label {{ color: var(--muted); font-size:.95rem; }}
-  .kpi-value {{ font-size:1.35rem; font-weight:700; margin-top:2px; font-family:'Space Grotesk', sans-serif; }}
-  .kpi-sub {{ color:var(--muted); font-size:.85rem; }}
+  .kpi:hover {{ transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }}
+  .kpi .label {{ color: var(--muted); font-size: .95rem; }}
+  .kpi .value {{ font-size: 1.35rem; font-weight: 700; margin-top: 2px; font-family: 'Space Grotesk', sans-serif; }}
+  .kpi .sub {{ color: var(--muted); font-size: .85rem; }}
 </style>
 <div class="kpi-grid">
-  <div class="kpi-card">
-    <div class="kpi-label">Required corpus at retirement</div>
-    <div id="kpi1" class="kpi-value">0</div>
-    <div class="kpi-sub">Covers expenses till life expectancy</div>
+  <div class="kpi">
+    <div class="label">Required corpus at retirement</div>
+    <div id="kpi1" class="value">0</div>
+    <div class="sub">Covers expenses till life expectancy</div>
   </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Monthly SIP needed</div>
-    <div id="kpi2" class="kpi-value">0</div>
-    <div class="kpi-sub">Contributed at the start of each month</div>
+  <div class="kpi">
+    <div class="label">Monthly SIP needed</div>
+    <div id="kpi2" class="value">0</div>
+    <div class="sub">Contributed at the start of each month</div>
   </div>
-  <div class="kpi-card">
-    <div class="kpi-label">Lumpsum needed today</div>
-    <div id="kpi3" class="kpi-value">0</div>
-    <div class="kpi-sub">If you prefer a one‑time investment</div>
+  <div class="kpi">
+    <div class="label">Lumpsum needed today</div>
+    <div id="kpi3" class="value">0</div>
+    <div class="sub">If you prefer a one‑time investment</div>
   </div>
 </div>
 <script>
@@ -347,7 +368,7 @@ st.session_state.prev_F22 = int(F22)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Preparedness & Snapshot
+# Preparedness & Snapshot (unchanged)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
@@ -386,4 +407,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.5 — KPI iframe now theme‑aware (tokens + fonts), animations intact")
+st.caption("v4.6 — KPI animation with exact original styling restored")
