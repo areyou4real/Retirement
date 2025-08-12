@@ -81,6 +81,9 @@ def inject_css():
           .card h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
           .hint { color: var(--muted); font-size:.9rem; }
 
+          .card1 { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 0; display: inline-block; margin: 0;  text-align: center; }
+          .card1 h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
+
           .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
@@ -164,7 +167,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # ---------- INPUTS (Single card) ----------
 with st.container():
-    st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='card1'><h3>Inputs</h3>", unsafe_allow_html=True)
 
     # Timeline (equal-width columns)
     c1, c2, c3 = st.columns(3)
