@@ -85,6 +85,9 @@ def inject_css():
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
 
+          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
+          .hero .subtitle { color: var(--muted); margin-top: 6px; }
+
           /* Smaller cards */
           .card {
             background: var(--card);
