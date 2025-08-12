@@ -85,9 +85,6 @@ def inject_css():
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
 
-          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
-          .hero .subtitle { color: var(--muted); margin-top: 6px; }
-
           /* Smaller cards */
           .card {
             background: var(--card);
@@ -126,6 +123,11 @@ def inject_css():
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
+
+          /* Snapshot metric styles (inside card) */
+          .snap-metric { margin: 6px 0 10px; }
+          .snap-metric .label { color: var(--muted); font-size:.92rem; }
+          .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
 
           .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
           .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
@@ -240,7 +242,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # INPUTS (Single card, 3-per-row layout)
 # =========================
 with st.container():
-    
+    st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
 
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
@@ -340,7 +342,43 @@ with k3:
         unsafe_allow_html=True,
     )
 
-# Animate numbers (CountUp with Indian formatter) targeting parent DOM
+# --- Preparedness & Snapshot (Preparedness unchanged; Snapshot animated) ---
+cA, cB = st.columns([1.2, 1])
+with cA:
+    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
+    st.caption("How much of the required corpus is already covered by your existing investments (grown to retirement)")
+    st.progress(coverage)
+    st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Keep previous snapshot values for animation
+if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
+if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
+
+with cB:
+    st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
+    # Existing corpus
+    st.markdown(
+        f"<div class='snap-metric'>"
+        f"<div class='label'>Existing corpus at retirement (future value)</div>"
+        f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    # Gap to fund
+    gap = max(F20, 0.0)
+    st.markdown(
+        f"<div class='snap-metric'>"
+        f"<div class='label'>Gap to fund</div>"
+        f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    if F20 < 0:
+        st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Animate numbers (CountUp with Indian formatter) targeting parent DOM (KPIs + Snapshot)
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -371,8 +409,6 @@ st_html(
           if (!el || typeof countUp === 'undefined') return;
           const opts = {{
             duration: 1.2,
-            separator: ',',     // not used because formattingFn overrides
-            decimal: '.',
             formattingFn: formatIndian
           }};
           try {{
@@ -380,9 +416,15 @@ st_html(
             a.start();
           }} catch (e) {{}}
         }}
+
+        // KPIs
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(F21)}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(F22)}, {int(st.session_state.get('prev_F22', 0))});
+
+        // Snapshot
+        run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
+        run('snap2', {int(gap)}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
     </script>
     """,
@@ -393,25 +435,10 @@ st_html(
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(F21)
 st.session_state.prev_F22 = int(F22)
+st.session_state.prev_snap_fv = int(FV_existing_at_ret)
+st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-
-# Preparedness & Snapshot
-cA, cB = st.columns([1.2, 1])
-with cA:
-    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
-    st.caption("How much of the required corpus is already covered by your existing investments (grown to retirement)")
-    st.progress(coverage)
-    st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-with cB:
-    st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
-    st.metric("Existing corpus at retirement (future value)", fmt_money_indian(FV_existing_at_ret))
-    gap = max(F20, 0.0)
-    st.metric("Gap to fund", fmt_money_indian(gap))
-    if F20 < 0:
-        st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # CTA: Start Investing (centered, with hover animation)
 st.markdown(
@@ -435,4 +462,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.8 — Indian-number formatting across app + animated KPIs")
+st.caption("v4.9 — Indian formatting + animated KPIs & Snapshot")
