@@ -250,11 +250,11 @@ with st.container():
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
-        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
+        age_now = st.number_input("Current age", min_value=18, max_value=80, value=25, step=1)
     with r1c2:
         age_retire = st.number_input("Target retirement age", min_value=age_now+1, max_value=90, value=60, step=1)
     with r1c3:
-        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=110, value=90, step=1)
+        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=120, value=90, step=1)
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
@@ -264,7 +264,7 @@ with st.container():
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
+        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=40.0, value=8.0, step=0.1, format="%.1f")
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
