@@ -19,18 +19,47 @@ def inject_css():
     st.markdown(
         """
         <style>
+          /* Fonts */
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
-            --navy: #1A1744;
-            --orange: #FF844A;
-            --white: #FFFFFF;
+            /* Light tokens (default) */
+            --bg: #f7f8fc;
+            --card: #ffffff;
+            --card-2: #fbfcff;
+            --text: #0e1321;
+            --muted: #5d6473;
+            --ring: #e7eaf3;
+            --chip: #eef2ff;
+            --accent: #2563EB;           /* blue-600 */
+            --accent-hover: #1E40AF;     /* blue-800 */
+            --warn: #fbbc04;
+            --danger: #ff6b6b;
+            --ok: #34d399;
+          }
+
+          @media (prefers-color-scheme: dark) {
+            :root {
+              /* Dark tokens */
+              --bg: #0b0f1a;
+              --card: #12182a;
+              --card-2: #0e1424;
+              --text: #e8edf5;
+              --muted: #9aa4b2;
+              --ring: #27304a;
+              --chip: #1b2340;
+              --accent: #3B82F6;         /* brighter for dark */
+              --accent-hover: #2563EB;
+              --warn: #fbbc04;
+              --danger: #ff6b6b;
+              --ok: #34d399;
+            }
           }
 
           html, body, [class*="css"] {
-            background: var(--white);
-            color: var(--navy);
-            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
             font-size:16px; line-height:1.6;
           }
 
@@ -39,85 +68,97 @@ def inject_css():
             letter-spacing:.2px; font-weight:600;
           }
 
-          .mono, .num {
-            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
-          }
+          .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+          .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          /* HERO with orange gradient fade */
           .hero {
-            padding: 20px 18px; border: 1px solid var(--navy); border-radius: 14px;
-            background: linear-gradient(90deg, var(--orange) 0%, rgba(255,132,74,0) 100%);
+            padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
+            background:
+              radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
+              radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
+              linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
             max-width: 760px;
             margin: 0 auto;
             text-align: center;
-            color: var(--white);
           }
-          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; }
-          .hero .subtitle { color: var(--white); margin-top: 6px; }
+          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
+          .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Cards with navy gradient */
-          .card, .kpi {
-            background: linear-gradient(135deg, var(--navy) 0%, rgba(26,23,68,0.85) 100%);
-            border:1px solid var(--navy);
+          /* Smaller cards (inputs, preparedness, snapshot) */
+          .card {
+            background: var(--card-2);
+            border:1px solid var(--ring);
             border-radius: 12px;
             padding: 14px 16px;
             width: 100%;
-            max-width: 760px;
+            max-width: 760px;          /* smaller */
             margin: 0 auto 12px;
             box-sizing: border-box;
-            color: var(--white);
           }
-          .card h3, .kpi .label, .kpi .value, .kpi .sub, .hint {
-            color: var(--white);
-          }
-
-          /* Badges on dark cards */
-          .badge {
-            padding: 3px 8px; border-radius: 9999px; font-weight: 700;
-            font-size:.78rem; border:1px solid var(--white);
-            background: transparent; color: var(--white);
+          .card h3 {
+            margin:0 0 8px 0;
+            font-weight:600;
+            font-size:22px;            /* slightly smaller title */
+            letter-spacing:.2px;
+            text-align:center;
           }
 
-          /* Inputs */
+          .hint { color: var(--muted); font-size:.9rem; }
+
+          .kpi {
+            background: var(--card-2);
+            border:1px solid var(--ring);
+            border-radius: 12px;
+            padding: 14px;
+            text-align:center;
+          }
+          .kpi .label { color: var(--muted); font-size: .95rem; }
+          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+          .kpi .sub { color: var(--muted); font-size: .85rem; }
+
+          .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
+          .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
+          .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
+          .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
+
+          .divider { height:1px; background: var(--ring); margin: 10px 0; }
+
+          /* Inputs — equal width/height */
+          .stNumberInput, .stTextInput { width: 100% !important; }
           .stNumberInput input, .stTextInput input {
-            border:1px solid var(--white) !important; border-radius: 10px !important;
-            padding: 10px 12px !important;
-            height: 44px !important;
+            border:1px solid var(--ring) !important; border-radius: 10px !important;
+            padding: 10px 12px !important; width: 100% !important;
+            height: 44px !important;    /* consistent height */
             box-sizing: border-box;
-            color: var(--navy);
-            background: var(--white);
           }
           .stNumberInput input:focus, .stTextInput input:focus {
-            box-shadow: 0 0 0 2px var(--orange) !important;
-            border-color: var(--orange) !important;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important;
+            border-color: var(--accent) !important;
           }
 
           /* Sticky summary bar */
           .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
-            background: linear-gradient(135deg, var(--navy) 0%, rgba(26,23,68,0.85) 100%);
-            border-top:1px solid var(--white);
-            padding: 10px 14px; border-radius: 12px 12px 0 0;
-            max-width: 760px; margin: 0 auto;
-            color: var(--white);
+            background: var(--card-2); border-top:1px solid var(--ring);
+            padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 760px; margin: 0 auto;
           }
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+          @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
           /* CTA button */
-          a { text-decoration: none; }
+          a { text-decoration: none; } /* remove underline */
           .start-btn {
             display:block;
-            margin:20px auto 40px;
+            margin:20px auto 40px;    /* bottom gap from summary grid */
             padding:14px 28px;
             font-size:18px; font-weight:600;
             border:none; border-radius:9999px;
-            background-color:var(--orange); color:var(--white);
+            background-color:var(--accent); color:#fff;
             cursor:pointer; text-align:center;
             transition: all 0.25s ease;
           }
           .start-btn:hover {
-            background-color:#e66f36;
+            background-color:var(--accent-hover);
             transform: scale(1.05);
             filter: brightness(1.08);
           }
