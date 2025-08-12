@@ -444,7 +444,7 @@ st.session_state.prev_F22 = int(F22)
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:3px'></div>", unsafe_allow_html=True)
 
 # CTA: Start Investing (centered, with hover animation)
 st.markdown(
