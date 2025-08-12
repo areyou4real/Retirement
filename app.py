@@ -86,7 +86,7 @@ def inject_css():
 
           /* Smaller cards (inputs, preparedness, snapshot) */
           .card {
-            background: var(--card);
+            background: var(--card-2);
             border:1px solid var(--ring);
             border-radius: 12px;
             padding: 14px 16px;
