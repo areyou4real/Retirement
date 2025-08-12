@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from streamlit.components.v1 import html
 
 # =========================
 # App Config
@@ -83,9 +84,6 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-
-          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
-          .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
           /* Smaller cards */
           .card {
@@ -172,12 +170,14 @@ def inject_css():
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
           }
+
+          /* KPI grid for animated numbers (inside iframe) */
+          .kpi-grid { display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-inject_css()
 inject_css()
 
 # =========================
@@ -225,7 +225,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # INPUTS (Single card, 3-per-row layout)
 # =========================
 with st.container():
-    st.markdown("<div class='kpi'><div class='value num'>Inputs</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
 
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
@@ -289,36 +289,76 @@ status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class 
 # =========================
 # OUTPUTS (below inputs)
 # =========================
+
 def fmt_money(x):
     try:
         return f"₹{x:,.0f}"
     except Exception:
         return str(x)
 
-# KPI row
-k1, k2, k3 = st.columns(3)
-with k1:
-    st.markdown("<div class='kpi'><div class='label'>Required corpus at retirement</div><div class='value num'>" + fmt_money(F19) + "</div><div class='sub'>Covers expenses till life expectancy</div></div>", unsafe_allow_html=True)
-with k2:
-    st.markdown("<div class='kpi'><div class='label'>Monthly SIP needed</div><div class='value num'>" + fmt_money(F21) + "</div><div class='sub'>Contributed at the start of each month</div></div>", unsafe_allow_html=True)
-with k3:
-    st.markdown("<div class='kpi'><div class='label'>Lumpsum needed today</div><div class='value num'>" + fmt_money(F22) + "</div><div class='sub'>If you prefer a one‑time investment</div></div>", unsafe_allow_html=True)
+# --- Animated KPI Row (CountUp.js) ---
+# keep previous values to animate from
+if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
+if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
+if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
+
+kpi_html = f"""
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
+<style>
+  .kpi-grid {{ display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }}
+  .kpi-card {{ background: var(--card-2); border:1px solid var(--ring); border-radius:12px; padding:14px; text-align:center; }}
+  .kpi-label {{ color: var(--muted); font-size:.95rem; }}
+  .kpi-value {{ font-size:1.35rem; font-weight:700; margin-top:2px; font-family:'Space Grotesk',sans-serif; }}
+  .kpi-sub {{ color: var(--muted); font-size:.85rem; }}
+</style>
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">Required corpus at retirement</div>
+    <div id="kpi1" class="kpi-value">0</div>
+    <div class="kpi-sub">Covers expenses till life expectancy</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Monthly SIP needed</div>
+    <div id="kpi2" class="kpi-value">0</div>
+    <div class="kpi-sub">Contributed at the start of each month</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Lumpsum needed today</div>
+    <div id="kpi3" class="kpi-value">0</div>
+    <div class="kpi-sub">If you prefer a one‑time investment</div>
+  </div>
+</div>
+<script>
+  const opts = {{ duration: 1.2, separator: ',', decimal: '.', prefix: '₹' }};
+  const a = new countUp.CountUp('kpi1', {int(F19)}, {{...opts, startVal: {int(st.session_state.prev_F19)}}});
+  const b = new countUp.CountUp('kpi2', {int(F21)}, {{...opts, startVal: {int(st.session_state.prev_F21)}}});
+  const c = new countUp.CountUp('kpi3', {int(F22)}, {{...opts, startVal: {int(st.session_state.prev_F22)}}});
+  a.start(); b.start(); c.start();
+</script>
+"""
+html(kpi_html, height=140)
+
+# update previous values for next rerun
+st.session_state.prev_F19 = int(F19)
+st.session_state.prev_F21 = int(F21)
+st.session_state.prev_F22 = int(F22)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # Preparedness & Snapshot (smaller cards)
 cA, cB = st.columns([1.2, 1])
 with cA:
-    st.markdown("<div class='kpi'><div class='value num'>Preparedness</div>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
     st.caption("How much of the required corpus is already covered by your existing investments (grown to retirement)")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 with cB:
-    st.markdown("<div class='kpi'><div class='value num'>Snapshot</div>", unsafe_allow_html=True)
-    st.metric("Existing corpus at retirement (future value)", fmt_money(FV_existing_at_ret))
+    st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
+    st.metric("Existing corpus at retirement (future value)", f"₹{FV_existing_at_ret:,.0f}")
     gap = max(F20, 0.0)
-    st.metric("Gap to fund", fmt_money(gap))
+    st.metric("Gap to fund", f"₹{gap:,.0f}")
     if F20 < 0:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -336,8 +376,8 @@ st.markdown(
     f"""
     <div class='sticky-summary'>
       <div class='summary-grid'>
-        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money(F19)}</div></div>
-        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money(F21)}</div></div>
+        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>₹{F19:,.0f}</div></div>
+        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>₹{F21:,.0f}</div></div>
         <div><div class='hint'>Coverage now</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{coverage*100:.1f}%</div></div>
       </div>
     </div>
@@ -345,4 +385,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.3")
+st.caption("v4.4 — animated KPIs with CountUp.js, hover micro‑interactions")
