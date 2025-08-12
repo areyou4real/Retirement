@@ -12,100 +12,106 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- Theme Toggle (Light / Dark via CSS variables) ---
-if "ui_theme" not in st.session_state:
-    st.session_state.ui_theme = "Dark"
+# =========================
+# System theme via prefers-color-scheme (no toggle)
+# =========================
 
-with st.container():
-    top_cols = st.columns([1, 1, 1, 1, 1])
-    with top_cols[-1]:
-        st.session_state.ui_theme = st.selectbox("Theme", ["Dark", "Light"], index=0 if st.session_state.ui_theme=="Dark" else 1)
-
-def inject_css(theme: str = "Dark"):
-    if theme == "Light":
-        bg = "#f7f8fc"; card = "#ffffff"; card2 = "#fbfcff"; text = "#0e1321"; muted = "#5d6473"; ring = "#e7eaf3"; chip = "#eef2ff"
-    else:
-        bg = "#0b0f1a"; card = "#12182a"; card2 = "#0e1424"; text = "#e8edf5"; muted = "#9aa4b2"; ring = "#27304a"; chip = "#1b2340"
-
+def inject_css():
     st.markdown(
-        f"""
+        """
         <style>
-          /* New Font Pairing */
+          /* Fonts */
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
-          :root {{
-            --bg: {bg};
-            --card: {card};
-            --card-2: {card2};
-            --muted: {muted};
-            --text: {text};
+          :root {
+            /* Light tokens (default) */
+            --bg: #f7f8fc;
+            --card: #ffffff;
+            --card-2: #fbfcff;
+            --text: #0e1321;
+            --muted: #5d6473;
+            --ring: #e7eaf3;
+            --chip: #eef2ff;
             --accent: #6ee7b7;
             --accent-2: #8ab4f8;
             --warn: #fbbc04;
             --danger: #ff6b6b;
             --ok: #34d399;
-            --ring: {ring};
-            --chip: {chip};
-          }}
+          }
 
-          html, body, [class*="css"] {{
+          @media (prefers-color-scheme: dark) {
+            :root {
+              /* Dark tokens */
+              --bg: #0b0f1a;
+              --card: #12182a;
+              --card-2: #0e1424;
+              --text: #e8edf5;
+              --muted: #9aa4b2;
+              --ring: #27304a;
+              --chip: #1b2340;
+              --accent: #6ee7b7;
+              --accent-2: #8ab4f8;
+              --warn: #fbbc04;
+              --danger: #ff6b6b;
+              --ok: #34d399;
+            }
+          }
+
+          html, body, [class*="css"] {
             background: var(--bg);
             color: var(--text);
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
             font-size:16px; line-height:1.6;
-          }}
-          h1,h2,h3,h4 {{ font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing:.2px; font-weight:600; }}
-          .mono {{ font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }}
-          .num {{ font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }}
+          }
+          h1,h2,h3,h4 { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing:.2px; font-weight:600; }
+          .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+          .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          .hero {{
+          .hero {
             padding: 22px 18px; border: 1px solid var(--ring); border-radius: 16px;
             background:
               radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
               radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
               linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
-          }}
-          .title {{ font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }}
-          .subtitle {{ color: var(--muted); margin-top: 6px; }}
+          }
+          .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }
+          .subtitle { color: var(--muted); margin-top: 6px; }
 
-          .pill {{ display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:9999px; border:1px solid var(--ring); background: var(--chip); color: var(--text); font-size:.9rem; }}
+          .card { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 14px 16px; max-width: 960px; margin: 0 auto; }
+          .card h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
+          .hint { color: var(--muted); font-size:.9rem; }
 
-          /* Cards — narrower */
-          .card {{ background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 14px 16px; max-width: 960px; margin: 0 auto; }}
-          .card h3 {{ margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; text-align: center;}}
-          .hint {{ color: var(--muted); font-size:.9rem; }}
+          .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }
+          .kpi .label { color: var(--muted); font-size: .95rem; }
+          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+          .kpi .sub { color: var(--muted); font-size: .85rem; }
 
-          .kpi {{ background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }}
-          .kpi .label {{ color: var(--muted); font-size: .95rem; }}
-          .kpi .value {{ font-size: 1.35rem; font-weight: 700; margin-top: 2px; }}
-          .kpi .sub {{ color: var(--muted); font-size: .85rem; }}
+          .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
+          .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
+          .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
+          .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
-          .badge {{ padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }}
-          .badge.ok {{ background: rgba(52,211,153,.12); color: var(--ok); }}
-          .badge.warn {{ background: rgba(251,188,4,.12); color: var(--warn); }}
-          .badge.bad {{ background: rgba(255,107,107,.12); color: var(--danger); }}
-
-          .divider {{ height:1px; background: var(--ring); margin: 12px 0; }}
+          .divider { height:1px; background: var(--ring); margin: 12px 0; }
 
           /* Inputs — equal width & consistent look */
-          .stNumberInput, .stTextInput {{ width: 100% !important; }}
-          .stNumberInput input, .stTextInput input {{ border:1px solid var(--ring) !important; border-radius: 10px !important; padding: 12px !important; width: 100% !important; }}
-          .stNumberInput input:focus, .stTextInput input:focus {{ box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important; border-color: var(--accent) !important; }}
+          .stNumberInput, .stTextInput { width: 100% !important; }
+          .stNumberInput input, .stTextInput input { border:1px solid var(--ring) !important; border-radius: 10px !important; padding: 12px !important; width: 100% !important; }
+          .stNumberInput input:focus, .stTextInput input:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important; border-color: var(--accent) !important; }
 
           /* Sticky summary bar */
-          .sticky-summary {{
+          .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
             background: var(--card-2); border-top:1px solid var(--ring);
             padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 960px; margin: 0 auto;
-          }}
-          .summary-grid {{ display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }}
-          @media (max-width: 900px) {{ .summary-grid {{ grid-template-columns: 1fr; }} }}
+          }
+          .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
+          @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-inject_css(st.session_state.ui_theme)
+inject_css()
 
 # =========================
 # Excel-style helpers (Excel parity)
@@ -138,13 +144,10 @@ def PMT(rate: float, nper: float, pv: float = 0.0, fv: float = 0.0, typ: int = 0
 # HERO
 # =========================
 st.markdown(
-    f"""
+    """
     <div class='hero'>
       <div class='title'>Retirement Planner</div>
       <div class='subtitle'>Minimal inputs. Clear outputs. Excel‑parity PV/FV/PMT with payments at period start where applicable.</div>
-      <div style='margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;'>
-        <span class='pill'>Theme: <b>{st.session_state.ui_theme}</b></span>
-      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -217,13 +220,13 @@ coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
 
+# ---------- OUTPUTS (below inputs) ----------
+
 def fmt_money(x):
     try:
         return f"₹{x:,.0f}"
     except Exception:
         return str(x)
-
-# ---------- OUTPUTS (below inputs) ----------
 
 # KPI row
 k1, k2, k3 = st.columns(3)
@@ -253,9 +256,7 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# =========================
-# Sticky Summary Footer (updated wording)
-# =========================
+# Sticky Summary Footer
 st.markdown(
     f"""
     <div class='sticky-summary'>
@@ -269,4 +270,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("Made with Streamlit • Horizontal flow • New fonts (Plus Jakarta Sans + Space Grotesk) • v4.2")
+st.caption("Made with Streamlit • System theme (auto) • New fonts • v4.3")
