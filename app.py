@@ -32,8 +32,8 @@ def inject_css():
             --muted: #5d6473;
             --ring: #e7eaf3;
             --chip: #eef2ff;
-            --accent: #2563EB;
-            --accent-hover: #1E40AF;
+            --accent: #2563EB;          /* blue-600 */
+            --accent-hover: #1E40AF;    /* blue-800 */
             --warn: #fbbc04;
             --danger: #ff6b6b;
             --ok: #34d399;
@@ -49,7 +49,7 @@ def inject_css():
               --muted: #9aa4b2;
               --ring: #27304a;
               --chip: #1b2340;
-              --accent: #3B82F6;
+              --accent: #3B82F6;        /* brighter for dark */
               --accent-hover: #2563EB;
               --warn: #fbbc04;
               --danger: #ff6b6b;
@@ -170,9 +170,6 @@ def inject_css():
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
           }
-
-          /* KPI grid for animated numbers (inside iframe) */
-          .kpi-grid { display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }
         </style>
         """,
         unsafe_allow_html=True,
@@ -183,28 +180,17 @@ inject_css()
 # =========================
 # Excel-style helpers (Excel parity)
 # =========================
-def _pow1p(x, n):
-    return (1.0 + x) ** n
-
-def FV(rate: float, nper: float, pmt: float = 0.0, pv: float = 0.0, typ: int = 0) -> float:
-    if abs(rate) < 1e-12:
-        return -(pv + pmt * nper)
-    g = _pow1p(rate, nper)
-    return -(pv * g + pmt * (1 + rate * typ) * (g - 1) / rate)
-
-def PV(rate: float, nper: float, pmt: float = 0.0, fv: float = 0.0, typ: int = 0) -> float:
-    if abs(rate) < 1e-12:
-        return -(fv + pmt * nper)
-    g = _pow1p(rate, nper)
-    return -(fv + pmt * (1 + rate * typ) * (g - 1) / rate) / g
-
-def PMT(rate: float, nper: float, pv: float = 0.0, fv: float = 0.0, typ: int = 0) -> float:
-    if nper <= 0:
-        return 0.0
-    if abs(rate) < 1e-12:
-        return -(fv + pv) / nper
-    g = _pow1p(rate, nper)
-    return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
+def _pow1p(x, n): return (1.0 + x) ** n
+def FV(rate, nper, pmt=0.0, pv=0.0, typ=0):
+    if abs(rate) < 1e-12: return -(pv + pmt * nper)
+    g = _pow1p(rate, nper); return -(pv * g + pmt * (1 + rate * typ) * (g - 1) / rate)
+def PV(rate, nper, pmt=0.0, fv=0.0, typ=0):
+    if abs(rate) < 1e-12: return -(fv + pmt * nper)
+    g = _pow1p(rate, nper); return -(fv + pmt * (1 + rate * typ) * (g - 1) / rate) / g
+def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
+    if nper <= 0: return 0.0
+    if abs(rate) < 1e-12: return -(fv + pv) / nper
+    g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
 # HERO
@@ -296,21 +282,36 @@ def fmt_money(x):
     except Exception:
         return str(x)
 
-# --- Animated KPI Row (CountUp.js) ---
-# keep previous values to animate from
+# --- Animated KPI Row (CountUp.js) with theme-aware styles inside iframe ---
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
 
 kpi_html = f"""
 <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
 <style>
+  :root {{
+    --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3;
+  }}
+  @media (prefers-color-scheme: dark) {{
+    :root {{ --bg:#0b0f1a; --card:#12182a; --card-2:#0e1424; --text:#e8edf5; --muted:#9aa4b2; --ring:#27304a; }}
+  }}
+  body {{ margin:0; font-family:'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--text); background: transparent; }}
   .kpi-grid {{ display:grid; gap:12px; grid-template-columns: repeat(3, minmax(0,1fr)); }}
-  .kpi-card {{ background: var(--card-2); border:1px solid var(--ring); border-radius:12px; padding:14px; text-align:center; }}
+  .kpi-card {{
+    background: var(--card-2);
+    border: 1px solid var(--ring);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    transition: all .25s ease;
+  }}
+  .kpi-card:hover {{ transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }}
   .kpi-label {{ color: var(--muted); font-size:.95rem; }}
-  .kpi-value {{ font-size:1.35rem; font-weight:700; margin-top:2px; font-family:'Space Grotesk',sans-serif; }}
-  .kpi-sub {{ color: var(--muted); font-size:.85rem; }}
+  .kpi-value {{ font-size:1.35rem; font-weight:700; margin-top:2px; font-family:'Space Grotesk', sans-serif; }}
+  .kpi-sub {{ color:var(--muted); font-size:.85rem; }}
 </style>
 <div class="kpi-grid">
   <div class="kpi-card">
@@ -337,7 +338,7 @@ kpi_html = f"""
   a.start(); b.start(); c.start();
 </script>
 """
-html(kpi_html, height=140)
+html(kpi_html, height=160)
 
 # update previous values for next rerun
 st.session_state.prev_F19 = int(F19)
@@ -346,7 +347,7 @@ st.session_state.prev_F22 = int(F22)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Preparedness & Snapshot (smaller cards)
+# Preparedness & Snapshot
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
@@ -385,4 +386,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v4.4 — animated KPIs with CountUp.js, hover micro‑interactions")
+st.caption("v4.5 — KPI iframe now theme‑aware (tokens + fonts), animations intact")
