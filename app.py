@@ -81,8 +81,9 @@ def inject_css():
           .card h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
           .hint { color: var(--muted); font-size:.9rem; }
 
-          .card1 { background: var(--card); border:1px solid var(--ring); border-radius: 14px; padding: 0; display: inline-block; margin: 0;  text-align: center; }
+          .card1 { background: var(--card); border:1px solid var(--ring); border-radius: 14px; max-width: 960px; padding: 0; display: inline-block; margin: 0;  text-align: center; }
           .card1 h3 { margin:0 0 6px 0; font-weight:600; font-size:20px; letter-spacing:.2px; }
+          .hint { color: var(--muted); font-size:.9rem; }
 
           .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }
           .kpi .label { color: var(--muted); font-size: .95rem; }
