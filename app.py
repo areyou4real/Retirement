@@ -240,7 +240,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # INPUTS (Single card, 3-per-row layout)
 # =========================
 with st.container():
-    st.markdown("<div class='card'><h3>Inputs</h3>", unsafe_allow_html=True)
+    
 
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
