@@ -32,8 +32,8 @@ def inject_css():
             --muted: #5d6473;
             --ring: #e7eaf3;
             --chip: #eef2ff;
-            --accent: #6ee7b7;
-            --accent-2: #8ab4f8;
+            --accent: #2563EB;
+            --accent-hover: #1E40AF;
             --warn: #fbbc04;
             --danger: #ff6b6b;
             --ok: #34d399;
@@ -49,8 +49,8 @@ def inject_css():
               --muted: #9aa4b2;
               --ring: #27304a;
               --chip: #1b2340;
-              --accent: #6ee7b7;
-              --accent-2: #8ab4f8;
+              --accent: #3B82F6;         /* slightly brighter for dark */
+              --accent-hover: #2563EB;
               --warn: #fbbc04;
               --danger: #ff6b6b;
               --ok: #34d399;
@@ -63,7 +63,12 @@ def inject_css():
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
             font-size:16px; line-height:1.6;
           }
-          h1,h2,h3,h4 { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing:.2px; font-weight:600; }
+
+          h1,h2,h3,h4 {
+            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+            letter-spacing:.2px; font-weight:600;
+          }
+
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
@@ -73,15 +78,41 @@ def inject_css():
               radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
               radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
               linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+            max-width: 960px;
+            margin: 0 auto;
+            text-align: center;
           }
-          .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }
-          .subtitle { color: var(--muted); margin-top: 6px; }
+          .hero .title { font-size: clamp(1.6rem, 1.2vw + 1.1rem, 2.2rem); font-weight: 700; letter-spacing:.2px; }
+          .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          .card { background: var(--card); border:1px solid var(--ring); border-radius: 14px; max-width: 960px; margin: 0 auto; text-align: center; }
-          .card h3 { margin:0 0 6px 0; font-weight:600; font-size:30px; letter-spacing:.2px; }
+          /* FIXED: cards now have padding and don't force center on all text */
+          .card {
+            background: var(--card);
+            border:1px solid var(--ring);
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 840px;          /* narrower so it hugs content better */
+            margin: 0 auto 12px;       /* center + breathing room below */
+            box-sizing: border-box;    /* ensures padding is included in width */
+          }
+          .card h3 {
+            margin:0 0 6px 0;
+            font-weight:600;
+            font-size:24px;            /* sleeker title size */
+            letter-spacing:.2px;
+            text-align:center;         /* only the title is centered */
+          }
+
           .hint { color: var(--muted); font-size:.9rem; }
 
-          .kpi { background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; }
+          .kpi {
+            background: var(--card-2);
+            border:1px solid var(--ring);
+            border-radius: 12px;
+            padding: 14px;
+            text-align:center;
+          }
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
@@ -95,19 +126,34 @@ def inject_css():
 
           /* Inputs — equal width & consistent look */
           .stNumberInput, .stTextInput { width: 100% !important; }
-          .stNumberInput input, .stTextInput input { border:1px solid var(--ring) !important; border-radius: 10px !important; padding: 12px !important; width: 100% !important; }
-          .stNumberInput input:focus, .stTextInput input:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important; border-color: var(--accent) !important; }
+          .stNumberInput input, .stTextInput input {
+            border:1px solid var(--ring) !important; border-radius: 10px !important;
+            padding: 12px !important; width: 100% !important;
+          }
+          .stNumberInput input:focus, .stTextInput input:focus {
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important;
+            border-color: var(--accent) !important;
+          }
+
+          /* Ensure cards inside Streamlit columns don't get weirdly narrow */
+          .stColumn .card { max-width: 100%; }
 
           /* Sticky summary bar */
           .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
             background: var(--card-2); border-top:1px solid var(--ring);
-            padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 960px; margin: 0 auto;
+            padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 840px; margin: 0 auto;
           }
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          .start-btn { display:block; margin:20px auto; padding:14px 28px; font-size:18px; font-weight:600; border:none; border-radius:9999px; background-color:var(--accent); color:#fff; cursor:pointer; text-align:center; transition: background-color 0.2s ease; }
+          /* CTA button */
+          .start-btn {
+            display:block; margin:16px auto 0; padding:14px 28px;
+            font-size:18px; font-weight:600; border:none; border-radius:9999px;
+            background-color:var(--accent); color:#fff; cursor:pointer; text-align:center;
+            transition: background-color 0.2s ease;
+          }
           .start-btn:hover { background-color:var(--accent-hover); }
         </style>
         """,
@@ -242,7 +288,7 @@ with k3:
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Coverage & Snapshot
+# Preparedness & Snapshot
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
@@ -259,9 +305,13 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("""<a href='https://www.venturasecurities.com/' target='_blank'>
-<button class='start-btn'>Start Investing Now</button>
-</a>""", unsafe_allow_html=True)
+# CTA: Start Investing
+st.markdown(
+    """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities'>
+          <button class='start-btn'>Start Investing Now</button>
+       </a>""",
+    unsafe_allow_html=True,
+)
 
 # Sticky Summary Footer
 st.markdown(
@@ -277,4 +327,4 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("Made with Streamlit • System theme (auto) • New fonts • v4.3")
+st.caption("v4.1 — compact cards, centered titles only, proper padding & hover")
