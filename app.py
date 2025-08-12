@@ -74,7 +74,7 @@ def inject_css():
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
-              radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
+              radial-gradient(1200px 600px at 12% -10%, rgba(255, 213, 128, 0.12) 0%, transparent 50%),
               radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
               linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
             max-width: 760px;
