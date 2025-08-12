@@ -114,17 +114,18 @@ def inject_css():
 
           /* Original KPI card look (used outside iframe) */
           .kpi {
-            background: var(--card-2);
-            border:1px solid var(--ring);
-            border-radius: 12px;
-            padding: 14px;
-            text-align:center;
-            transition: all 0.25s ease;
+          background: var(--card-2);
+          border:1px solid var(--ring);
+          border-radius: 12px;
+          padding: 14px;
+          text-align:center;
+          transition: all 0.25s ease;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
+
 
           .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
           .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
