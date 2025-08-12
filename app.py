@@ -345,6 +345,9 @@ with k3:
         unsafe_allow_html=True,
     )
 
+# Add spacing between KPI row and Preparedness/Snapshot row
+st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
 # --- Preparedness & Snapshot ---
 cA, cB = st.columns([1.2, 1])
 with cA:
