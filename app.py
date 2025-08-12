@@ -468,4 +468,5 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.caption("v5.0 by Dheer")
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v4.0 by Dheer</div>", unsafe_allow_html=True)
+
