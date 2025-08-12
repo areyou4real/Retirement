@@ -256,6 +256,8 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
+st.markdown("""<a href='https://www.venturasecurities.com/' target='_blank'><button class='cta-btn'>Start Investing Now</button></a>""", unsafe_allow_html=True)
+
 # Sticky Summary Footer
 st.markdown(
     f"""
