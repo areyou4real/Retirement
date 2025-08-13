@@ -178,40 +178,6 @@ def inject_css():
 inject_css()
 
 # =========================
-# Inline SVG Logo (robust)
-# =========================
-def render_svg_logo(path="assets/ventura-logo.svg", width_px=180):
-    search_paths = [path, "/mnt/data/ventura-logo.svg", "ventura-logo.svg"]
-    file_path = next((p for p in search_paths if os.path.exists(p)), None)
-    if not file_path:
-        return  # silently skip if not found
-    with open(file_path, "rb") as f:
-        svg_bytes = f.read()
-    try:
-        svg_text = svg_bytes.decode("utf-8")
-        if "<svg" in svg_text.lower():
-            st.markdown(
-                f"""
-                <div style="text-align:center; margin-bottom:16px;">
-                  <div style="display:inline-block; max-width:{width_px}px; width:100%;">{svg_text}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            return
-    except Exception:
-        pass
-    b64 = base64.b64encode(svg_bytes).decode()
-    st.markdown(
-        f"""
-        <div style="text-align:center; margin-bottom:16px;">
-          <img src="data:image/svg+xml;base64,{b64}" alt="Ventura Logo" style="max-width:{width_px}px;">
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# =========================
 # Excel-style helpers (Excel parity)
 # =========================
 def _pow1p(x, n): return (1.0 + x) ** n
