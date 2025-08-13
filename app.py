@@ -217,11 +217,6 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
-# =========================
-# HERO + Logo
-# =========================
-render_svg_logo("assets/ventura-logo.svg", width_px=180)
-
 st.markdown(
     """
     <div class='hero'>
