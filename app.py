@@ -224,45 +224,18 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
+# Read the SVG exactly as-is and inject
+with open("assets/ventura-logo.svg", "r", encoding="utf-8") as f:
+    svg_code = f.read()
 
-# --- Logo at top (robust inline SVG) ---
-import base64, os
-
-def render_svg_logo(path="assets/ventura-logo.svg", width_px=180):
-    if not os.path.exists(path):
-        # try a couple fallbacks
-        for alt in ("/mnt/data/ventura-logo.svg", "ventura-logo.svg"):
-            if os.path.exists(alt):
-                path = alt
-                break
-    try:
-        with open(path, "rb") as f:
-            svg_bytes = f.read()
-        # Option A: inline raw SVG (keeps it crisp + stylable)
-        svg_text = svg_bytes.decode("utf-8")
-        # constrain width without distorting
-        st.markdown(
-            f"""
-            <div style="text-align:center; margin-bottom:16px;">
-              <div style="display:inline-block; max-width:{width_px}px; width:100%;">{svg_text}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    except Exception:
-        # Option B (fallback): base64 <img> if decode fails
-        b64 = base64.b64encode(svg_bytes).decode()
-        st.markdown(
-            f"""
-            <div style="text-align:center; margin-bottom:16px;">
-              <img src="data:image/svg+xml;base64,{b64}" alt="Ventura Logo" style="max-width:{width_px}px;">
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-# Call this right before the HERO section:
-render_svg_logo("assets/ventura-logo.svg", width_px=180)
+st.markdown(
+    f"""
+    <div style="text-align:center; margin-bottom:16px;">
+      <div style="display:inline-block; max-width:180px; width:100%;">{svg_code}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # =========================
