@@ -64,11 +64,7 @@ def inject_css():
             font-size:16px; line-height:1.6;
           }
 
-          h1,h2,h3,h4 {
-            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
-            letter-spacing:.2px; font-weight:600;
-          }
-
+          /* Numbers */
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
@@ -89,7 +85,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Smaller cards (unchanged) */
+          /* Smaller cards */
           .card {
             background: var(--card);
             border:1px solid var(--ring);
@@ -111,7 +107,7 @@ def inject_css():
             text-align:center;
           }
 
-          /* EXACT KPI styles (shared) */
+          /* EXACT KPI styles */
           .kpi {
             background: var(--card-2);
             border:1px solid var(--ring);
@@ -135,26 +131,21 @@ def inject_css():
           .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
           .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
-          /* Inputs (unchanged) */
-          /* Inputs — equal width & consistent look */
+          /* Inputs */
           .stNumberInput, .stTextInput { width: 100% !important; }
           .stNumberInput input, .stTextInput input {
-          border:1px solid var(--ring) !important;
-          border-radius: 10px !important;
-          padding: 12px !important;
-          width: 100% !important;
-          font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
-          font-weight: 500;
-          letter-spacing: 0.2px;
-          }
-          .stNumberInput input:focus, .stTextInput input:focus {
-          box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent) !important;
-          border-color: var(--accent) !important;
+            border:1px solid var(--ring) !important; border-radius: 10px !important;
+            padding: 10px 12px !important; width: 100% !important;
+            height: 44px !important;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
+            font-weight: 500; letter-spacing: 0.2px;
           }
           .stNumberInput input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
           .stNumberInput input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
-          /* Sticky summary bar (unchanged) */
+          /* Sticky summary bar */
           .sticky-summary {
             position: sticky; bottom: 0; z-index: 100;
             background: var(--card-2); border-top:1px solid var(--ring);
@@ -165,7 +156,7 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA button (unchanged) */
+          /* CTA button */
           a { text-decoration: none; }
           .start-btn {
             display:block;
@@ -257,11 +248,11 @@ with st.container():
     # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
-        age_now = st.number_input("Current age", min_value=18, max_value=80, value=25, step=1)
+        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
     with r1c2:
         age_retire = st.number_input("Target retirement age", min_value=age_now+1, max_value=90, value=60, step=1)
     with r1c3:
-        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=120, value=90, step=1)
+        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=110, value=90, step=1)
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
@@ -271,7 +262,7 @@ with st.container():
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=40.0, value=8.0, step=0.1, format="%.1f")
+        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
@@ -301,10 +292,15 @@ F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exi
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # ---------- CORE CALCS ----------
+# Net real return during retirement
 F17 = (F9 - F7) / (1.0 + F7)
+# Annual expenses in the retirement year
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
-F19 = PV(F17, (F6 - F4), -F18, 0.0, 1)
+# REQUIRED CORPUS at retirement (INCLUDES inheritance goal as terminal value)
+F19 = PV(F17, (F6 - F4), -F18, -F14, 1)
+# Future value of current investments at retirement
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
+# Gap, SIP and Lumpsum
 F20 = F19 - FV_existing_at_ret
 F21 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22 = PV(F8, (F4 - F3), 0.0, -F20, 1)
@@ -324,12 +320,33 @@ if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
 
 k1, k2, k3 = st.columns(3)
 
+def fmt_money_indian(x):
+    try:
+        n = int(round(float(x)))
+    except Exception:
+        return f"₹{x}"
+    s = str(abs(n))
+    if len(s) <= 3:
+        out = s
+    else:
+        last3 = s[-3:]
+        rest = s[:-3]
+        parts = []
+        while len(rest) > 2:
+            parts.insert(0, rest[-2:])
+            rest = rest[:-2]
+        if rest:
+            parts.insert(0, rest)
+        out = ",".join(parts) + "," + last3
+    sign = "-" if n < 0 else ""
+    return f"₹{sign}{out}"
+
 with k1:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy</div>"
+        f"<div class='sub'>Includes the inheritance goal</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -358,8 +375,8 @@ st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 # --- Preparedness & Snapshot ---
 cA, cB = st.columns([1.2, 1])
 with cA:
-    st.markdown("<div class='card'><h3>Your Preparedness</h3>", unsafe_allow_html=True)
-    st.caption("How much of the required corpus is already covered by your existing investments (grown to retirement)")
+    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
+    st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -391,7 +408,7 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Animate numbers (CountUp with Indian formatter) targeting parent DOM (KPIs + Snapshot)
+# Animate numbers (CountUp with Indian formatter) for KPIs + Snapshot
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -451,7 +468,7 @@ st.session_state.prev_F22 = int(F22)
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-st.markdown("<div style='height:3px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # CTA: Start Investing (centered, with hover animation)
 st.markdown(
@@ -461,7 +478,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sticky Summary Footer (unchanged)
+# Sticky Summary Footer
 st.markdown(
     f"""
     <div class='sticky-summary'>
@@ -475,5 +492,5 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v4.0 by Dheer</div>", unsafe_allow_html=True)
-
+# Centered version label
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.1 — Inheritance goal included in corpus</div>", unsafe_allow_html=True)
