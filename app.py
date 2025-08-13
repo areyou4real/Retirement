@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from streamlit.components.v1 import html as st_html
-import os, base64
 
 # =========================
 # App Config
@@ -15,17 +13,17 @@ st.set_page_config(
 )
 
 # =========================
-# CSS / Theme
+# System theme via prefers-color-scheme (no toggle)
 # =========================
+
 def inject_css():
     st.markdown(
         """
         <style>
           /* Fonts */
-          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
-            /* Light tokens (default) */
             --bg: #f7f8fc;
             --card: #ffffff;
             --card-2: #fbfcff;
@@ -33,8 +31,8 @@ def inject_css():
             --muted: #5d6473;
             --ring: #e7eaf3;
             --chip: #eef2ff;
-            --accent: #2563EB;          /* blue-600 */
-            --accent-hover: #1E40AF;    /* blue-800 */
+            --accent: #6ee7b7;
+            --accent-hover: #4dd1a4;
             --warn: #fbbc04;
             --danger: #ff6b6b;
             --ok: #34d399;
@@ -42,7 +40,6 @@ def inject_css():
 
           @media (prefers-color-scheme: dark) {
             :root {
-              /* Dark tokens */
               --bg: #0b0f1a;
               --card: #12182a;
               --card-2: #0e1424;
@@ -50,8 +47,8 @@ def inject_css():
               --muted: #9aa4b2;
               --ring: #27304a;
               --chip: #1b2340;
-              --accent: #3B82F6;        /* brighter for dark */
-              --accent-hover: #2563EB;
+              --accent: #6ee7b7;
+              --accent-hover: #4dd1a4;
               --warn: #fbbc04;
               --danger: #ff6b6b;
               --ok: #34d399;
@@ -61,15 +58,21 @@ def inject_css():
           html, body, [class*="css"] {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Dancing Script', cursive;
             font-size:16px; line-height:1.6;
           }
 
-          /* Numbers */
-          .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
-          .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+          h1,h2,h3,h4, label, .stCaption {
+            font-family: 'Dancing Script', cursive;
+          }
 
-          /* === HERO (exactly as you requested) === */
+          .mono, .num {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+          }
+
+          /* Hero */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -85,22 +88,11 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Smaller cards */
-          .card {
-            background: var(--card);
-            border:1px solid var(--ring);
-            border-radius: 12px;
-            padding: 14px 16px;
-            width: 100%;
-            max-width: 760px;
-            margin: 0 auto 12px;
-            box-sizing: border-box;
-            transition: all 0.25s ease;
-          }
+          /* Cards */
+          .card { background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px; max-width: 960px; margin: 0 auto; text-align: center; transition: all 0.25s ease; }
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* EXACT KPI styles (keep) */
+          /* KPI */
           .kpi {
             background: var(--card-2);
             border:1px solid var(--ring);
@@ -110,72 +102,44 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .kpi .label { color: var(--muted); font-size: .95rem; }
-          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
-          .kpi .sub { color: var(--muted); font-size: .85rem; }
-
-          /* Snapshot metric styles */
-          .snap-metric { margin: 6px 0 10px; }
-          .snap-metric .label { color: var(--muted); font-size:.92rem; }
-          .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
-
-          .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
-          .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
-          .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
-          .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
+          .kpi .label { color: var(--muted); font-size: .95rem; font-family: 'Dancing Script', cursive; }
+          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+          .kpi .sub { color: var(--muted); font-size: .85rem; font-family: 'Dancing Script', cursive; }
 
           /* Inputs */
-          .stNumberInput, .stTextInput { width: 100% !important; }
           .stNumberInput input, .stTextInput input {
-            border:1px solid var(--ring) !important; border-radius: 10px !important;
-            padding: 10px 12px !important; width: 100% !important;
-            height: 44px !important;
-            box-sizing: border-box;
-            transition: all 0.25s ease;
-            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
-            font-weight: 500; letter-spacing: 0.2px;
+            border:1px solid var(--ring) !important;
+            border-radius: 10px !important;
+            padding: 12px !important;
+            width: 100% !important;
+            font-family: 'Dancing Script', cursive !important;
           }
-          .stNumberInput input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-          .stNumberInput input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
-          /* Sticky summary bar */
-          .sticky-summary {
-            position: sticky; bottom: 0; z-index: 100;
-            background: var(--card-2); border-top:1px solid var(--ring);
-            padding: 10px 14px; border-radius: 12px 12px 0 0; max-width: 760px; margin: 0 auto;
-            transition: all 0.25s ease;
-          }
-          .sticky-summary:hover { transform: scale(1.01); box-shadow: 0 -2px 10px rgba(0,0,0,0.08); }
-          .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
-          @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
-
-          /* CTA button */
-          a { text-decoration: none; }
+          /* Start Button */
           .start-btn {
             display:block;
-            margin:20px auto 40px;
+            margin:20px auto;
             padding:14px 28px;
-            font-size:18px; font-weight:600;
-            border:none; border-radius:9999px;
-            background-color:var(--accent); color:#fff;
-            cursor:pointer; text-align:center;
-            transition: all 0.25s ease;
+            font-size:18px;
+            font-weight:600;
+            border:none;
+            border-radius:9999px;
+            background-color:var(--accent);
+            color:#fff;
+            cursor:pointer;
+            text-align:center;
+            transition: background-color 0.2s ease, transform 0.25s ease;
+            font-family: 'Dancing Script', cursive;
+            text-decoration:none;
           }
-          .start-btn:hover {
-            background-color:var(--accent-hover);
-            transform: scale(1.05);
-            filter: brightness(1.08);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-          }
-
-          /* Width limiter for inputs (no card) */
-          .section { max-width: 760px; margin: 0 auto 12px; }
+          .start-btn:hover { background-color:var(--accent-hover); transform: translateY(-2px); }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 inject_css()
+
 
 # =========================
 # Excel-style helpers (Excel parity)
