@@ -224,18 +224,51 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
-# Read the SVG exactly as-is and inject
-with open("assets/ventura-logo.svg", "r", encoding="utf-8") as f:
-    svg_code = f.read()
+# --- Logo at top (inline SVG with fallback) ---
 
-st.markdown(
-    f"""
-    <div style="text-align:center; margin-bottom:16px;">
-      <div style="display:inline-block; max-width:180px; width:100%;">{svg_code}</div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+import os, base64
+
+def render_svg_logo(path="assets/ventura-logo.svg", width_px=180):
+    # Try to find the file if the default path doesn't exist
+    search_paths = [path, "/mnt/data/ventura-logo.svg", "ventura-logo.svg"]
+    file_path = next((p for p in search_paths if os.path.exists(p)), None)
+    if not file_path:
+        st.warning("Logo file not found. Checked: " + ", ".join(search_paths))
+        return
+
+    with open(file_path, "rb") as f:
+        svg_bytes = f.read()
+
+    try:
+        svg_text = svg_bytes.decode("utf-8")
+        # Ensure it contains an <svg> root element
+        if "<svg" in svg_text.lower():
+            st.markdown(
+                f"""
+                <div style="text-align:center; margin-bottom:16px;">
+                  <div style="display:inline-block; max-width:{width_px}px; width:100%;">{svg_text}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            return
+    except Exception:
+        pass
+
+    # Fallback: base64 <img>
+    b64 = base64.b64encode(svg_bytes).decode()
+    st.markdown(
+        f"""
+        <div style="text-align:center; margin-bottom:16px;">
+          <img src="data:image/svg+xml;base64,{b64}" alt="Ventura Logo" style="max-width:{width_px}px;">
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# Call this BEFORE your hero block:
+render_svg_logo("assets/ventura-logo.svg", width_px=180)
+
 
 
 # =========================
