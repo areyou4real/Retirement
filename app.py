@@ -346,7 +346,7 @@ with k1:
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Includes the inheritance goal</div>"
+        f"<div class='sub'>Covers expenses till life expectancy and inheritance</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
