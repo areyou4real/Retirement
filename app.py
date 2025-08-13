@@ -358,7 +358,7 @@ st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
 # --- Preparedness & Snapshot ---
 cA, cB = st.columns([1.2, 1])
 with cA:
-    st.markdown("<div class='card'><h3>How Prepared Are You?</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>Your Preparedness</h3>", unsafe_allow_html=True)
     st.caption("How much of the required corpus is already covered by your existing investments (grown to retirement)")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
