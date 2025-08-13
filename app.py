@@ -225,14 +225,8 @@ def fmt_money_indian(x):
     return f"₹{sign}{out}"
 
 # --- Logo at top ---
-st.markdown(
-    """
-    <div style='text-align:center; margin-bottom: 16px;'>
-        <img src='assets/ventura-logo.svg' alt='Ventura Logo' style='max-width:180px;'>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown(open("assets/ventura-logo.svg", "r", encoding="utf-8").read(), unsafe_allow_html=True)
+
 
 # =========================
 # HERO
