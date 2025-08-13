@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from streamlit.components.v1 import html as st_html
+import os, base64
 
 # =========================
 # App Config
@@ -14,7 +15,7 @@ st.set_page_config(
 )
 
 # =========================
-# System theme via prefers-color-scheme (no toggle)
+# CSS / Theme
 # =========================
 def inject_css():
     st.markdown(
@@ -68,7 +69,7 @@ def inject_css():
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          /* === HERO (exactly as provided) === */
+          /* === HERO (exactly as you requested) === */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -81,7 +82,6 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
@@ -98,16 +98,9 @@ def inject_css():
             transition: all 0.25s ease;
           }
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+          .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          .card h3 {
-            margin:0 0 8px 0;
-            font-weight:600;
-            font-size:22px;
-            letter-spacing:.2px;
-            text-align:center;
-          }
-
-          /* EXACT KPI styles */
+          /* EXACT KPI styles (keep) */
           .kpi {
             background: var(--card-2);
             border:1px solid var(--ring);
@@ -185,6 +178,40 @@ def inject_css():
 inject_css()
 
 # =========================
+# Inline SVG Logo (robust)
+# =========================
+def render_svg_logo(path="assets/ventura-logo.svg", width_px=180):
+    search_paths = [path, "/mnt/data/ventura-logo.svg", "ventura-logo.svg"]
+    file_path = next((p for p in search_paths if os.path.exists(p)), None)
+    if not file_path:
+        return  # silently skip if not found
+    with open(file_path, "rb") as f:
+        svg_bytes = f.read()
+    try:
+        svg_text = svg_bytes.decode("utf-8")
+        if "<svg" in svg_text.lower():
+            st.markdown(
+                f"""
+                <div style="text-align:center; margin-bottom:16px;">
+                  <div style="display:inline-block; max-width:{width_px}px; width:100%;">{svg_text}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            return
+    except Exception:
+        pass
+    b64 = base64.b64encode(svg_bytes).decode()
+    st.markdown(
+        f"""
+        <div style="text-align:center; margin-bottom:16px;">
+          <img src="data:image/svg+xml;base64,{b64}" alt="Ventura Logo" style="max-width:{width_px}px;">
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# =========================
 # Excel-style helpers (Excel parity)
 # =========================
 def _pow1p(x, n): return (1.0 + x) ** n
@@ -200,7 +227,7 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# Number formatting (Indian system)
+# Indian Number Formatting
 # =========================
 def fmt_money_indian(x):
     """Format numbers as ₹ in Indian numbering system (##,##,###)."""
@@ -225,8 +252,10 @@ def fmt_money_indian(x):
     return f"₹{sign}{out}"
 
 # =========================
-# HERO
+# HERO + Logo
 # =========================
+render_svg_logo("assets/ventura-logo.svg", width_px=180)
+
 st.markdown(
     """
     <div class='hero'>
@@ -236,28 +265,57 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # =========================
-# INPUTS (NO title card; same width, same rows)
+# INPUTS (NO title card; 3-per-row)
+# with robust min/max clamping to avoid Streamlit value/min errors
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
-    # Row 1
+    # Row 1 — Current age, Target retirement age, Life expectancy
     r1c1, r1c2, r1c3 = st.columns(3)
+
     with r1c1:
-        age_now = st.number_input("Current age", min_value=16, max_value=60, value=25, step=1)
+        # Current age (base input)
+        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
+
     with r1c2:
-        age_retire = st.number_input("Target retirement age", min_value=age_now+1, max_value=80, value=60, step=1)
+        # Target retirement age depends on current age
+        min_retire_age = age_now + 1
+        hard_max_retire = 90
+        # Guard if min > max
+        max_retire_age = max(min_retire_age, hard_max_retire)
+        # Clamp a sensible default (60) within [min, max]
+        default_retire_age = min(max(60, min_retire_age), max_retire_age)
+        age_retire = st.number_input(
+            "Target retirement age",
+            min_value=min_retire_age,
+            max_value=max_retire_age,
+            value=default_retire_age,
+            step=1
+        )
+
     with r1c3:
-        life_expectancy = st.number_input("Life expectancy", min_value=age_retire+1, max_value=110, value=90, step=1)
+        # Life expectancy depends on retirement age
+        min_life_exp = age_retire + 1
+        hard_max_life = 110
+        max_life_exp = max(min_life_exp, hard_max_life)
+        default_life = 90
+        default_life = min(max(default_life, min_life_exp), max_life_exp)
+        life_expectancy = st.number_input(
+            "Life expectancy",
+            min_value=min_life_exp,
+            max_value=max_life_exp,
+            value=default_life,
+            step=1
+        )
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
-    # Row 2
+    # Row 2 — Inflation, Return on existing, Monthly expense
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
@@ -270,7 +328,7 @@ with st.container():
     st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
-    # Row 3
+    # Row 3 — Yearly expenses (derived), Current investments, Inheritance goal
     r3c1, r3c2, r3c3 = st.columns(3)
     with r3c1:
         yearly_exp = monthly_exp * 12.0
@@ -313,40 +371,18 @@ status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class 
 # OUTPUTS (below inputs)
 # =========================
 
-# --- KPI Row (rendered in main DOM) ---
+# --- KPI Row (with animation, Indian formatting) ---
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
 
 k1, k2, k3 = st.columns(3)
-
-def fmt_money_indian(x):
-    try:
-        n = int(round(float(x)))
-    except Exception:
-        return f"₹{x}"
-    s = str(abs(n))
-    if len(s) <= 3:
-        out = s
-    else:
-        last3 = s[-3:]
-        rest = s[:-3]
-        parts = []
-        while len(rest) > 2:
-            parts.insert(0, rest[-2:])
-            rest = rest[:-2]
-        if rest:
-            parts.insert(0, rest)
-        out = ",".join(parts) + "," + last3
-    sign = "-" if n < 0 else ""
-    return f"₹{sign}{out}"
-
 with k1:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy and inheritance</div>"
+        f"<div class='sub'>Includes the inheritance goal</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -369,46 +405,7 @@ with k3:
         unsafe_allow_html=True,
     )
 
-# Add spacing between KPI row and Preparedness/Snapshot row
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-
-# --- Preparedness & Snapshot ---
-cA, cB = st.columns([1.2, 1])
-with cA:
-    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
-    st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
-    st.progress(coverage)
-    st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Keep previous snapshot values for animation
-if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
-if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
-
-with cB:
-    st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
-    # Existing corpus
-    st.markdown(
-        f"<div class='snap-metric'>"
-        f"<div class='label'>Existing corpus at retirement (future value)</div>"
-        f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    # Gap to fund
-    gap = max(F20, 0.0)
-    st.markdown(
-        f"<div class='snap-metric'>"
-        f"<div class='label'>Gap to fund</div>"
-        f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-    if F20 < 0:
-        st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# Animate numbers (CountUp with Indian formatter) for KPIs + Snapshot
+# Animate KPIs + Snapshot (CountUp.js with Indian formatting)
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -433,26 +430,94 @@ st_html(
             return "₹" + num;
           }}
         }}
-
         function run(id, end, start) {{
           const el = window.parent.document.getElementById(id);
           if (!el || typeof countUp === 'undefined') return;
-          const opts = {{
-            duration: 1.2,
-            formattingFn: formatIndian
-          }};
-          try {{
-            const a = new countUp.CountUp(el, end, {{...opts, startVal: start}});
-            a.start();
-          }} catch (e) {{}}
+          const opts = {{ duration: 1.2, formattingFn: formatIndian }};
+          try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
-
-        // KPIs
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(F21)}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(F22)}, {int(st.session_state.get('prev_F22', 0))});
+      }})();
+    </script>
+    """,
+    height=0,
+)
 
-        // Snapshot
+# Save previous KPI values
+st.session_state.prev_F19 = int(F19)
+st.session_state.prev_F21 = int(F21)
+st.session_state.prev_F22 = int(F22)
+
+# Space between KPI and next row
+st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+
+# --- Preparedness & Snapshot ---
+cA, cB = st.columns([1.2, 1])
+with cA:
+    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
+    st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
+    st.progress(coverage)
+    st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Keep previous snapshot values for animation
+if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
+if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
+
+with cB:
+    st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='snap-metric'>"
+        f"<div class='label'>Existing corpus at retirement (future value)</div>"
+        f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    gap = max(F20, 0.0)
+    st.markdown(
+        f"<div class='snap-metric'>"
+        f"<div class='label'>Gap to fund</div>"
+        f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    if F20 < 0:
+        st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Animate Snapshot values
+st_html(
+    f"""
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
+    <script>
+      (function() {{
+        function formatIndian(num) {{
+          try {{
+            num = Math.round(num);
+            const sign = num < 0 ? "-" : "";
+            let s = Math.abs(num).toString();
+            if (s.length <= 3) return "₹" + sign + s;
+            const last3 = s.slice(-3);
+            let rest = s.slice(0, -3);
+            const parts = [];
+            while (rest.length > 2) {{
+              parts.unshift(rest.slice(-2));
+              rest = rest.slice(0, -2);
+            }}
+            if (rest.length) parts.unshift(rest);
+            return "₹" + sign + parts.join(",") + "," + last3;
+          }} catch (e) {{
+            return "₹" + num;
+          }}
+        }}
+        function run(id, end, start) {{
+          const el = window.parent.document.getElementById(id);
+          if (!el || typeof countUp === 'undefined') return;
+          const opts = {{ duration: 1.2, formattingFn: formatIndian }};
+          try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
+        }}
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
         run('snap2', {int(gap)}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
@@ -461,16 +526,13 @@ st_html(
     height=0,
 )
 
-# Update prev values for next run (for smooth animation)
-st.session_state.prev_F19 = int(F19)
-st.session_state.prev_F21 = int(F21)
-st.session_state.prev_F22 = int(F22)
+# Update prev snapshot values
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: Start Investing (centered, with hover animation)
+# CTA: Start Investing
 st.markdown(
     """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities'>
           <button class='start-btn'>Start Investing Now</button>
@@ -493,4 +555,4 @@ st.markdown(
 )
 
 # Centered version label
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.1 — Inheritance goal included in corpus</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.2 — Guarded inputs (no min/value errors) • Inheritance included</div>", unsafe_allow_html=True)
