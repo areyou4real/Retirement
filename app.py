@@ -341,8 +341,7 @@ with st.container():
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {indian_words_short(monthly_exp)}")
 
-    # Keep THIS caption under row 2
-    st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
+  
 
     # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
@@ -644,3 +643,4 @@ st.markdown(
 # Version label + before-retirement caption
 st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — Input words + KPI polish</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
+st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
