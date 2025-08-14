@@ -588,47 +588,46 @@ if clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Build row in EXACT order requested
     row = [
-        now_ist,                                              # Date
-        st.session_state.get("user_first_name", ""),          # First Name
-        st.session_state.get("user_last_name", ""),           # Last Name
-        st.session_state.get("user_email", ""),               # Email
-        st.session_state.get("user_phone", ""),               # Phone Number
-        int(F3),                                              # Current age
-        int(F4),                                              # Retirement (target age)
-        int(F6),                                              # Life Expectancy
-        float(infl_pct),                                      # Inflation
-        float(12.0),                                          # Return on existing investments (fixed)
-        float(F11),                                           # Current monthly expenses
-        float(F12),                                           # Yearly expenses
-        float(F13),                                           # Current investments
-        float(F14),                                           # Inheritance to leave
-        float(F19),                                           # Required corpus at retirement
-        float(FV_existing_at_ret),                            # Existing corpus at retirement
-        float(max(F20, 0.0)),                                 # Gap to fund (non-negative)
-        float(F21_display),                                   # Monthly SIP needed (non-negative)
-        float(F22_display),                                   # Lumpsum needed today (non-negative)
-        float(F25),                                           # Additional SIP
-        float(F26),                                           # Additional Lumpsum
-        float(round(coverage * 100.0, 1)),                    # Coverage (%)
+        now_ist,
+        st.session_state.get("user_first_name", ""),
+        st.session_state.get("user_last_name", ""),
+        st.session_state.get("user_email", ""),
+        st.session_state.get("user_phone", ""),
+        int(F3), int(F4), int(F6),
+        float(infl_pct), 12.0,
+        float(F11), float(F12), float(F13), float(F14),
+        float(F19), float(FV_existing_at_ret), float(max(F20, 0.0)),
+        float(F21_display), float(F22_display),
+        float(F25), float(F26),
+        float(round(coverage * 100.0, 1)),
     ]
 
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
-        st.success("Saved! Redirecting to Ventura…")
+        st.success("Saved! Opening Ventura in a new tab…")
         st.session_state["_redirect_once"] = True
-        # Robust, single-path same-tab redirect
+
+        # Open Ventura in a new tab/window from this user click (works inside sandboxed iframes)
         st_html(
             """
             <script>
               (function(){
-                window.location.assign('https://www.venturasecurities.com/');
+                // New tab to avoid frame-navigation block by X-Frame-Options
+                const url = 'https://www.venturasecurities.com/';
+                try { window.top.open(url, '_blank', 'noopener'); }
+                catch(e) {
+                  try { window.open(url, '_blank', 'noopener'); } catch(e2){}
+                }
               })();
             </script>
             """,
             height=0,
         )
+
+        # Also render a visible link (in case the browser blocks popups)
+        st.link_button("Continue to Ventura", "https://www.venturasecurities.com/", type="primary")
+
 
 # Sticky Summary
 st.markdown(
