@@ -69,6 +69,7 @@ def inject_css():
           /* KPI */
           .kpi {
             background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
+            min-height: 112px;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .kpi .label { color: var(--muted); font-size: .95rem; }
@@ -137,13 +138,13 @@ def inject_css():
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
 
-          /* Panel: same size/layout as .card but with kpi surface */
+          /* Panel: same size/layout as .card but with KPI surface + centered content */
           .panel {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); } /* Only change background; keep size same */
+          .panel.kpi-surface { background: var(--card-2); text-align:center; } /* same size, just surface + centered */
 
           /* Animated row for totals (row 3) */
           .kpi-row3 { transition: all .28s ease; }
@@ -217,35 +218,8 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
-def indian_format_plain(n: float) -> str:
-    """Indian comma formatting without the ₹ symbol (for input display)."""
-    try:
-        n = int(round(float(n)))
-    except:
-        return "0"
-    s = str(abs(n))
-    if len(s) <= 3:
-        out = s
-    else:
-        last3 = s[-3:]
-        rest = s[:-3]
-        parts = []
-        while len(rest) > 2:
-            parts.insert(0, rest[-2:])
-            rest = rest[:-2]
-        if rest:
-            parts.insert(0, rest)
-        out = ",".join(parts) + "," + last3
-    return ("-" if n < 0 else "") + out
-
-def parse_indian_number(s: str) -> float:
-    try:
-        return float(s.replace(",", "").strip())
-    except:
-        return 0.0
-
 def number_to_words_short(n: float) -> str:
-    """Very small helper to say values like '5 thousand', '7 lakh', '2 crore' (rounded)."""
+    """Small helper: '5 thousand', '7.25 lakh', '2.10 crore'."""
     try:
         n = float(n)
     except:
@@ -305,7 +279,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.8 — Panels match KPI surface</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.9 — animations & centering</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -371,9 +345,6 @@ with st.container():
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(monthly_exp)}")
-
-    # Keep THIS caption under row 2
-    st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
     # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
@@ -470,7 +441,15 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # Row 2: Pick one | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
 with a1:
-    st.markdown("<div class='kpi'><div class='value'>Monthly SIP OR Lumpsum Today</div></div>", unsafe_allow_html=True)
+    # Same structure/min-height as other KPI cards
+    st.markdown(
+        "<div class='kpi'>"
+        "<div class='label'>Pick one</div>"
+        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
+        "<div class='sub'>&nbsp;</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 with a2:
     st.markdown(
         f"<div class='kpi'>"
@@ -573,10 +552,10 @@ st.session_state.prev_F26 = int(max(F26, 0))
 st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
 st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
 
-# Reduced space before Preparedness/Snapshot
+# Reduced space before Status/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Status of Retirement Goal & Snapshot (same size as before, kpi surface)
+# Status of Retirement Goal & Snapshot (same size as before, kpi surface & centered)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
@@ -672,6 +651,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Version label + before-retirement caption
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.8 — Panels match KPI surface</div>", unsafe_allow_html=True)
+# Version label + both fixed-rate captions at the bottom
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.9 — animations & centering</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
+st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
