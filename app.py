@@ -3,6 +3,10 @@ import pandas as pd
 import numpy as np
 from streamlit.components.v1 import html as st_html
 import os, base64
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime
+import pytz
 
 # =========================
 # App Config
@@ -149,20 +153,19 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA button */
-          a { text-decoration: none; }
-          .start-btn {
-            display:block;
-            margin:20px auto 40px;
-            padding:14px 28px;
-            font-size:18px; font-weight:600;
-            border:none; border-radius:9999px;
-            background-color:var(--accent); color:#fff;
-            cursor:pointer; text-align:center;
+          /* CTA button (Streamlit button restyle) */
+          div.cta-wrap { text-align: center; }
+          div.cta-wrap button[kind="primary"] {
+            margin: 20px auto 40px;
+            padding: 14px 28px;
+            font-size: 18px; font-weight: 600;
+            border: none; border-radius: 9999px;
+            background-color: var(--accent); color: #fff;
+            cursor: pointer; text-align: center;
             transition: all 0.25s ease;
           }
-          .start-btn:hover {
-            background-color:var(--accent-hover);
+          div.cta-wrap button[kind="primary"]:hover {
+            background-color: var(--accent-hover);
             transform: scale(1.05);
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
@@ -176,6 +179,36 @@ def inject_css():
     )
 
 inject_css()
+
+# =========================
+# Google Sheets helper
+# =========================
+def append_lead_to_gsheet(name: str, email: str, phone: str) -> bool:
+    """Append a lead row to Google Sheet. Returns True on success, False otherwise."""
+    try:
+        sa_info = st.secrets["gcp_service_account"]
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = Credentials.from_service_account_info(sa_info, scopes=scopes)
+        gc = gspread.authorize(creds)
+
+        sheet_url = st.secrets["gsheets"]["sheet_url"]
+        ws_name   = st.secrets["gsheets"].get("worksheet", "Leads")
+        sh = gc.open_by_url(sheet_url)
+        ws = sh.worksheet(ws_name)
+
+        # Timestamp in IST
+        ist = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Append row: [timestamp, name, email, phone]
+        ws.append_row([now_ist, name.strip(), email.strip(), phone.strip()], value_input_option="USER_ENTERED")
+        return True
+    except Exception as e:
+        st.error(f"Could not write to Google Sheet: {e}")
+        return False
 
 # =========================
 # Excel-style helpers (Excel parity)
@@ -278,7 +311,7 @@ with st.container():
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
         st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
-        ret_exist_pct = 12.0  # fixed
+        ret_exist_pct = 12.0  # fixed constant
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
@@ -508,13 +541,23 @@ with st.container():
     st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# CTA: Start Investing
-st.markdown(
-    """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities'>
-          <button class='start-btn'>Start Investing Now</button>
-       </a>""",
-    unsafe_allow_html=True,
-)
+# === CTA: Start Investing (writes to Sheet, then opens Ventura) ===
+st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
+clicked = st.button("Start Investing Now", type="primary", key="cta_submit")
+st.markdown("</div>", unsafe_allow_html=True)
+
+if clicked:
+    if not lead_name or not lead_email or not lead_phone:
+        st.warning("Please fill your Name, Email, and Phone before continuing.")
+    else:
+        ok = append_lead_to_gsheet(lead_name, lead_email, lead_phone)
+        if ok:
+            st.success("Thanks! Your details were submitted.")
+            # Open Ventura in a new tab
+            st_html(
+                "<script>window.open('https://www.venturasecurities.com/', '_blank');</script>",
+                height=0,
+            )
 
 # Sticky Summary Footer
 st.markdown(
@@ -531,4 +574,4 @@ st.markdown(
 )
 
 # Centered version label
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.3 — SIP/Lumpsum floor at 0 • Existing ROI fixed 12% • Lead capture</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.4 — Leads to Google Sheets • SIP/Lumpsum floor at 0 • ROI fixed 12%</div>", unsafe_allow_html=True)
