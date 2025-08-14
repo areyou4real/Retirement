@@ -535,7 +535,7 @@ st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
 
 # Space between KPI rows
-st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1px'></div>", unsafe_allow_html=True)
 
 # --- New KPI Row: Additional SIP & Lumpsum (Inheritance planning) ---
 a1, a2, _ = st.columns([1, 1, 1])
@@ -601,7 +601,7 @@ st.session_state.prev_F25 = int(F25)
 st.session_state.prev_F26 = int(F26)
 
 # Space between KPI and next row
-st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:2px'></div>", unsafe_allow_html=True)
 
 # --- Preparedness & Snapshot ---
 cA, cB = st.columns([1.2, 1])
@@ -680,7 +680,7 @@ st_html(
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:3px'></div>", unsafe_allow_html=True)
 
 # === CTA: Finalize & Start Investing (writes everything to Sheets, then redirect) ===
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
