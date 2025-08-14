@@ -101,7 +101,7 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA (centered Streamlit button) — UPDATED */
+          /* CTA (centered Streamlit button) */
           .cta-wrap {
             display: flex;
             justify-content: center;
@@ -166,23 +166,18 @@ def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: 
         st.error(f"Could not write sign-in to Google Sheet: {e}")
         return False
 
-def append_final_snapshot_to_gsheet(payload: dict) -> bool:
+def append_final_snapshot_to_gsheet_minimal(row_values: list) -> bool:
+    """
+    Writes ONLY the requested columns, in order:
+
+    Date | First Name | Last Name | Email | Phone Number | Current age | Retirement | Life Expectancy |
+    Inflation | Return on existing investments | Current monthly expenses | Yearly expenses | Current investments |
+    Inheritance to leave | Required corpus at retirement | Existing corpus at retirement | Gap to fund |
+    Monthly SIP needed | Lumpsum needed today | Additional SIP | Additional Lumpsum | Coverage
+    """
     try:
         ws = get_ws()
-        ordered_keys = [
-            "timestamp_ist",
-            "first_name", "last_name", "email", "phone",
-            "age_now", "age_retire", "life_expectancy",
-            "infl_pct", "ret_exist_pct", "monthly_exp", "yearly_exp",
-            "current_invest", "legacy_goal",
-            "F17_net_real_retirement", "F18_expenses_at_start_ret", "F19_required_corpus_at_ret",
-            "FV_existing_at_ret", "F20_gap",
-            "F21_sip_monthly_display", "F22_lumpsum_today_display",
-            "F24_corpus_for_legacy", "F25_additional_sip", "F26_additional_lumpsum",
-            "coverage_pct", "status_text",
-        ]
-        row = [payload.get(k, "") for k in ordered_keys]
-        ws.append_row(row, value_input_option="USER_ENTERED")
+        ws.append_row(row_values, value_input_option="USER_ENTERED")
         return True
     except Exception as e:
         st.error(f"Could not write final snapshot to Google Sheet: {e}")
@@ -211,6 +206,15 @@ def fmt_money_indian(x):
         out = ",".join(parts) + "," + last3
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
+
+def html_escape(s: str) -> str:
+    return (
+        s.replace("&", "&amp;")
+         .replace("<", "&lt;")
+         .replace(">", "&gt;")
+         .replace('"', "&quot;")
+         .replace("'", "&#39;")
+    )
 
 # =========================
 # SIMPLE SIGN-IN GATE
@@ -258,18 +262,25 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.5 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7 — Personalized title + minimal Sheets schema</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
 # CALCULATOR PAGE
 # =====================================================================
-st.markdown("""
+# Personalized title using first name
+fname = st.session_state.get("user_first_name", "").strip()
+fname_display = html_escape(fname) if fname else "Your"
+possessive = (fname_display + "&#39;s") if fname_display else "Your"
+st.markdown(
+    f"""
     <div class='hero'>
-      <div class='title'>Retirement Planner</div>
+      <div class='title'>{possessive} Retirement Planner</div>
       <div class='subtitle'>Please follow the instructions below</div>
     </div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
 # Excel parity helpers
@@ -321,7 +332,7 @@ with st.container():
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
-    # Keep THIS caption under row 2 (as requested)
+    # Fixed caption under row 2
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
     # Row 3
@@ -518,7 +529,7 @@ st.session_state.prev_snap_gap = int(gap)
 # Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: Finalize & Start Investing (writes everything to Sheets, then proper redirect)
+# CTA: Finalize & Start Investing (writes minimal fields to Sheets, then redirect)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
 clicked = st.button("Finalize & Start Investing", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
@@ -527,39 +538,36 @@ if clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-    payload = {
-        "timestamp_ist": now_ist,
-        "first_name": st.session_state.get("user_first_name", ""),
-        "last_name": st.session_state.get("user_last_name", ""),
-        "email": st.session_state.get("user_email", ""),
-        "phone": st.session_state.get("user_phone", ""),
+    # Build row in the EXACT order requested
+    row = [
+        now_ist,                                              # Date
+        st.session_state.get("user_first_name", ""),          # First Name
+        st.session_state.get("user_last_name", ""),           # Last Name
+        st.session_state.get("user_email", ""),               # Email
+        st.session_state.get("user_phone", ""),               # Phone Number
+        int(F3),                                              # Current age
+        int(F4),                                              # Retirement (target age)
+        int(F6),                                              # Life Expectancy
+        float(infl_pct),                                      # Inflation
+        float(12.0),                                          # Return on existing investments (fixed)
+        float(F11),                                           # Current monthly expenses
+        float(F12),                                           # Yearly expenses
+        float(F13),                                           # Current investments
+        float(F14),                                           # Inheritance to leave
+        float(F19),                                           # Required corpus at retirement
+        float(FV_existing_at_ret),                            # Existing corpus at retirement
+        float(max(F20, 0.0)),                                 # Gap to fund (non-negative)
+        float(F21_display),                                   # Monthly SIP needed (non-negative)
+        float(F22_display),                                   # Lumpsum needed today (non-negative)
+        float(F25),                                           # Additional SIP
+        float(F26),                                           # Additional Lumpsum
+        float(round(coverage * 100.0, 1)),                    # Coverage (percent)
+    ]
 
-        "age_now": int(F3), "age_retire": int(F4), "life_expectancy": int(F6),
-        "infl_pct": float(infl_pct), "ret_exist_pct": float(12.0),
-        "monthly_exp": float(F11), "yearly_exp": float(F12),
-        "current_invest": float(F13), "legacy_goal": float(F14),
-
-        "F17_net_real_retirement": float(F17),
-        "F18_expenses_at_start_ret": float(F18),
-        "F19_required_corpus_at_ret": float(F19),
-        "FV_existing_at_ret": float(FV_existing_at_ret),
-        "F20_gap": float(F20),
-        "F21_sip_monthly_display": float(F21_display),
-        "F22_lumpsum_today_display": float(F22_display),
-
-        "F24_corpus_for_legacy": float(F24),
-        "F25_additional_sip": float(F25),
-        "F26_additional_lumpsum": float(F26),
-
-        "coverage_pct": float(coverage * 100.0),
-        "status_text": status_text,
-    }
-
-    ok = append_final_snapshot_to_gsheet(payload)
+    ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
         st.success("Saved! Redirecting to Ventura…")
         st.session_state["_redirect_once"] = True
-        # Reliable same-tab navigation
         st_html(
             """
             <script>
@@ -571,7 +579,6 @@ if clicked:
             """,
             height=0,
         )
-        # Fallback link if any CSP blocks JS
         st.link_button("Continue to Ventura (if not redirected)", "https://www.venturasecurities.com/", type="primary")
 
 # Sticky Summary
@@ -588,6 +595,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Version label + ONLY the before-retirement caption here
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.6 — Centered CTA & collapsed iframes</div>", unsafe_allow_html=True)
+# Version + fixed before‑retirement caption
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7 — Personalized title + minimal Sheets schema</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
