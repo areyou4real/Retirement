@@ -531,7 +531,7 @@ st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
 # ---- Reduced space before CTA (1-2 lines) ----
-st.markdown("<div style='height:-10px'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1px'></div>", unsafe_allow_html=True)
 
 # CTA: Finalize & Start Investing (writes everything to Sheets, then proper redirect)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
