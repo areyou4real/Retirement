@@ -471,7 +471,7 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Row 3 totals — HTML grid WRAPPED so we can animate
+# Row 3 totals — grid WRAPPED so we can animate (cards now identical size)
 initial_attr = "1" if prev_show else "0"
 target_attr  = "1" if show_totals else "0"
 
@@ -479,7 +479,8 @@ st.markdown(
     f"""
     <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
       <div class="kpi-grid">
-        <div class="kpi" style="visibility:hidden">&nbsp;</div>
+        <!-- keep spacing & size exactly same as other KPIs -->
+        <div class="kpi" aria-hidden="true" style="opacity:0;">&nbsp;</div>
         <div class="kpi">
           <div class="label">Total Monthly SIP (incl. additional)</div>
           <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
@@ -503,12 +504,9 @@ st_html(
       (function(){{
         var row = window.parent.document.getElementById('kpi-row3');
         if(!row) return;
-        // force reflow then set target state to trigger transition
         var target = '{target_attr}';
-        row.setAttribute('data-show', row.getAttribute('data-show')); 
-        setTimeout(function(){{
-          row.setAttribute('data-show', target);
-        }}, 10);
+        row.setAttribute('data-show', row.getAttribute('data-show'));
+        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 10);
       }})();
     </script>
     """,
@@ -674,6 +672,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.0 — KPI row 3 animation fixed</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — Row‑3 KPI sizing unified</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
