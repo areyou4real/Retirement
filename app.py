@@ -40,7 +40,7 @@ def inject_css():
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:16px; line-height:1.6; }
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          /* HERO (as requested) */
+          /* HERO */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -74,6 +74,14 @@ def inject_css():
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
+
+          /* Appear animation for row-3 KPIs */
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .appear { animation: fadeUp .35s ease both; }
+          .appear.delay { animation-delay: .08s; }
 
           /* Snapshot metric */
           .snap-metric { margin: 6px 0 10px; }
@@ -182,7 +190,7 @@ def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
         return False
 
 # =========================
-# Indian Number Formatting (display & parse)
+# Indian Number Formatting & Words
 # =========================
 def fmt_money_indian(x):
     try:
@@ -205,31 +213,21 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
-def indian_format_plain(n: float) -> str:
+def indian_words_short(n: float) -> str:
+    """Return a short phrase like '5 thousand', '7 lakhs', '2.5 crores'."""
     try:
-        n = int(round(float(n)))
+        n = float(n)
     except:
-        return "0"
-    s = str(abs(n))
-    if len(s) <= 3:
-        out = s
-    else:
-        last3 = s[-3:]
-        rest = s[:-3]
-        parts = []
-        while len(rest) > 2:
-            parts.insert(0, rest[-2:])
-            rest = rest[:-2]
-        if rest:
-            parts.insert(0, rest)
-        out = ",".join(parts) + "," + last3
-    return ("-" if n < 0 else "") + out
-
-def parse_indian_number(s: str) -> float:
-    try:
-        return float(s.replace(",", "").strip())
-    except:
-        return 0.0
+        return ""
+    n_abs = abs(n)
+    units = [("crore", 10_000_000), ("lakh", 100_000), ("thousand", 1_000)]
+    for name, base in units:
+        if n_abs >= base:
+            qty = n_abs / base
+            qty = int(qty) if qty >= 10 else round(qty, 1)
+            plural = "" if qty == 1 else "s"
+            return f"{qty:g} {name}{plural}"
+    return f"{int(round(n_abs))} "
 
 # =========================
 # SIMPLE SIGN-IN GATE
@@ -277,7 +275,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.0 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — Input words + KPI polish</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -293,7 +291,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-# Excel parity helpers (PV/FV/PMT with period-begin when needed)
+# Excel parity helpers (PV/FV/PMT)
 def _pow1p(x, n): return (1.0 + x) ** n
 def FV(rate, nper, pmt=0.0, pv=0.0, typ=0):
     if abs(rate) < 1e-12: return -(pv + pmt * nper)
@@ -307,7 +305,7 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# INPUTS (3-per-row, robust clamping)
+# INPUTS (3-per-row, original number_inputs + words)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
@@ -340,12 +338,8 @@ with st.container():
         st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0
     with r2c3:
-        # monthly expenses as TEXT with Indian commas, clamp to 50,00,000
-        if "monthly_exp_str" not in st.session_state:
-            st.session_state.monthly_exp_str = indian_format_plain(50000)
-        monthly_exp_str = st.text_input("Current monthly expenses (₹)", st.session_state.monthly_exp_str, key="monthly_exp_str")
-        monthly_exp = parse_indian_number(monthly_exp_str)
-        monthly_exp = max(0.0, min(monthly_exp, 5_000_000.0))
+        monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
+        st.caption(f"≈ {indian_words_short(monthly_exp)}")
 
     # Keep THIS caption under row 2
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
@@ -355,20 +349,13 @@ with st.container():
     with r3c1:
         yearly_exp = monthly_exp * 12.0
         st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
+        st.caption(f"≈ {indian_words_short(yearly_exp)} per year")
     with r3c2:
-        # current investments as TEXT with Indian commas, clamp to 1,00,00,00,000
-        if "current_invest_str" not in st.session_state:
-            st.session_state.current_invest_str = indian_format_plain(1_000_000)
-        current_invest_str = st.text_input("Current investments (₹)", st.session_state.current_invest_str, key="current_invest_str")
-        current_invest = parse_indian_number(current_invest_str)
-        current_invest = max(0.0, min(current_invest, 1_000_000_000.0))
+        current_invest = st.number_input("Current investments (₹)", min_value=0.0, max_value=1_000_000_000.0, value=1_000_000.0, step=10_000.0, format="%.0f")
+        st.caption(f"≈ {indian_words_short(current_invest)}")
     with r3c3:
-        # inheritance as TEXT with Indian commas, clamp to 1,00,00,00,000
-        if "legacy_goal_str" not in st.session_state:
-            st.session_state.legacy_goal_str = indian_format_plain(0)
-        legacy_goal_str = st.text_input("Inheritance to leave (₹)", st.session_state.legacy_goal_str, key="legacy_goal_str")
-        legacy_goal = parse_indian_number(legacy_goal_str)
-        legacy_goal = max(0.0, min(legacy_goal, 1_000_000_000.0))
+        legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
+        st.caption(f"≈ {indian_words_short(legacy_goal)}")
 
     st.caption("Taxes are not modeled in this version.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -382,6 +369,10 @@ F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exi
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # CALCS (Excel-parity)
+def safe_int(x): 
+    try: return int(x)
+    except: return 0
+
 F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
 F19 = PV(F17, (F6 - F4), -F18, -F14, 1)  # Required corpus at retirement (incl. inheritance as terminal)
@@ -393,9 +384,9 @@ F21_display = max(F21_raw, 0.0)  # never negative
 F22_display = max(F22_raw, 0.0)  # never negative
 
 # Inheritance-specific (your formulas)
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)           # Corpus to accumulate (legacy only)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)                # Corpus to accumulate (legacy only)
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1) # Additional SIP
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)               # Additional Lumpsum
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
@@ -452,7 +443,15 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # Row 2: “Pick one” | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
 with a1:
-    st.markdown("<div class='kpi'><div class='value'>Monthly SIP OR Lumpsum Today</div></div>", unsafe_allow_html=True)
+    # Now same layout (label/value/sub) => same height as others
+    st.markdown(
+        "<div class='kpi'>"
+        "<div class='label'>Pick one</div>"
+        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
+        "<div class='sub'>Choose either approach</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 with a2:
     st.markdown(
         f"<div class='kpi'>"
@@ -470,7 +469,7 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Optional Row 3: Totals (only if additional > 0)
+# Optional Row 3: Totals (only if additional > 0) with smooth appear animation
 if show_totals:
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
     t1, t2, t3 = st.columns(3)
@@ -478,7 +477,7 @@ if show_totals:
         st.markdown("&nbsp;", unsafe_allow_html=True)
     with t2:
         st.markdown(
-            f"<div class='kpi'>"
+            f"<div class='kpi appear'>"
             f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
             f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.prev_total_monthly)}</div>"
             f"<div class='sub'>Base SIP + additional for legacy</div>"
@@ -486,14 +485,14 @@ if show_totals:
         )
     with t3:
         st.markdown(
-            f"<div class='kpi'>"
+            f"<div class='kpi appear delay'>"
             f"<div class='label'>Total Lumpsum (incl. additional)</div>"
             f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.prev_total_lumpsum)}</div>"
             f"<div class='sub'>Base lumpsum + additional for legacy</div>"
             f"</div>", unsafe_allow_html=True,
         )
 
-# Single COUNTUP block to avoid extra iframe gaps (FIXED totals lines)
+# Single COUNTUP block to avoid extra iframe gaps
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -532,7 +531,7 @@ st_html(
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
 
-        // KPI row 3 (totals) — FIXED: no extra braces
+        // KPI row 3 (totals)
         run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
         run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
@@ -643,5 +642,5 @@ st.markdown(
 )
 
 # Version label + before-retirement caption
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — Totals animation fix</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — Input words + KPI polish</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
