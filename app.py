@@ -120,6 +120,27 @@ def inject_css():
 
           /* Section width limiter */
           .section { max-width: 760px; margin: 0 auto 10px; }
+
+
+          /* Collapse spacing from Streamlit HTML iframes (used by st_html / CountUp) */
+          div[data-testid="stIFrame"]{
+          margin:0 !important;
+          padding:0 !important;
+          }
+          div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
+          height:0 !important;
+          min-height:0 !important;
+          border:0 !important;
+          display:block !important;
+          margin:0 !important;
+          padding:0 !important;
+          overflow:hidden !important;
+          }
+          /* Remove any accidental top gap after these iframes */
+          div[data-testid="stIFrame"] + div{
+          margin-top:0 !important;
+          }
+
         </style>
         """,
         unsafe_allow_html=True,
