@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from streamlit.components.v1 import html as st_html
-import os, base64
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
@@ -17,6 +16,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# One-time redirect guard (kept harmless even if unused now)
+if st.session_state.get("_redirect_once"):
+    st.session_state["_redirect_once"] = False
 
 # =========================
 # CSS / Theme
@@ -129,8 +132,8 @@ def inject_css():
           .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
           /* Inputs */
-          .stNumberInput, .stTextInput { width: 100% !important; }
-          .stNumberInput input, .stTextInput input, .stTextInput textarea {
+          .stNumberInput, .stTextInput, .stTextArea { width: 100% !important; }
+          .stNumberInput input, .stTextInput input, textarea {
             border:1px solid var(--ring) !important; border-radius: 10px !important;
             padding: 10px 12px !important; width: 100% !important;
             height: 44px !important;
@@ -139,8 +142,8 @@ def inject_css():
             font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
             font-weight: 500; letter-spacing: 0.2px;
           }
-          .stNumberInput input:hover, .stTextInput input:hover, .stTextInput textarea:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-          .stNumberInput input:focus, .stTextInput input:focus, .stTextInput textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
+          .stNumberInput input:hover, .stTextInput input:hover, textarea:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+          .stNumberInput input:focus, .stTextInput input:focus, textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
           /* Sticky summary bar */
           .sticky-summary {
@@ -153,25 +156,27 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA button (Streamlit button restyle) */
-          div.cta-wrap { text-align: center; }
-          div.cta-wrap button[kind="primary"] {
-            margin: 20px auto 40px;
-            padding: 14px 28px;
-            font-size: 18px; font-weight: 600;
-            border: none; border-radius: 9999px;
-            background-color: var(--accent); color: #fff;
-            cursor: pointer; text-align: center;
+          /* CTA link button (anchor) */
+          a { text-decoration: none; }
+          .start-btn {
+            display:block;
+            margin:20px auto 40px;
+            padding:14px 28px;
+            font-size:18px; font-weight:600;
+            border:none; border-radius:9999px;
+            background-color:var(--accent); color:#fff !important;
+            cursor:pointer; text-align:center;
             transition: all 0.25s ease;
+            width: fit-content;
           }
-          div.cta-wrap button[kind="primary"]:hover {
-            background-color: var(--accent-hover);
+          .start-btn:hover {
+            background-color:var(--accent-hover);
             transform: scale(1.05);
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
           }
 
-          /* Width limiter for inputs (no card) */
+          /* Width limiter for sections */
           .section { max-width: 760px; margin: 0 auto 12px; }
         </style>
         """,
@@ -183,8 +188,8 @@ inject_css()
 # =========================
 # Google Sheets helper
 # =========================
-def append_lead_to_gsheet(name: str, email: str, phone: str) -> bool:
-    """Append a lead row to Google Sheet. Returns True on success, False otherwise."""
+def append_lead_to_gsheet(first_name: str, last_name: str, email: str, phone: str) -> bool:
+    """Append a sign-in row to Google Sheet. Returns True on success, False otherwise."""
     try:
         sa_info = st.secrets["gcp_service_account"]
         scopes = [
@@ -203,27 +208,12 @@ def append_lead_to_gsheet(name: str, email: str, phone: str) -> bool:
         ist = pytz.timezone("Asia/Kolkata")
         now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-        # Append row: [timestamp, name, email, phone]
-        ws.append_row([now_ist, name.strip(), email.strip(), phone.strip()], value_input_option="USER_ENTERED")
+        # Append row: [timestamp, first_name, last_name, email, phone]
+        ws.append_row([now_ist, first_name.strip(), last_name.strip(), email.strip(), phone.strip()], value_input_option="USER_ENTERED")
         return True
     except Exception as e:
         st.error(f"Could not write to Google Sheet: {e}")
         return False
-
-# =========================
-# Excel-style helpers (Excel parity)
-# =========================
-def _pow1p(x, n): return (1.0 + x) ** n
-def FV(rate, nper, pmt=0.0, pv=0.0, typ=0):
-    if abs(rate) < 1e-12: return -(pv + pmt * nper)
-    g = _pow1p(rate, nper); return -(pv * g + pmt * (1 + rate * typ) * (g - 1) / rate)
-def PV(rate, nper, pmt=0.0, fv=0.0, typ=0):
-    if abs(rate) < 1e-12: return -(fv + pmt * nper)
-    g = _pow1p(rate, nper); return -(fv + pmt * (1 + rate * typ) * (g - 1) / rate) / g
-def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
-    if nper <= 0: return 0.0
-    if abs(rate) < 1e-12: return -(fv + pv) / nper
-    g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
 # Indian Number Formatting
@@ -251,6 +241,60 @@ def fmt_money_indian(x):
     return f"₹{sign}{out}"
 
 # =========================
+# SIMPLE SIGN-IN GATE
+# =========================
+if "signed_in" not in st.session_state:
+    st.session_state.signed_in = False
+
+if not st.session_state.signed_in:
+    # --- Sign-in view ---
+    st.markdown(
+        """
+        <div class='hero'>
+          <div class='title'>Welcome</div>
+          <div class='subtitle'>Sign in to continue to the Retirement Planner</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+    with st.container():
+        st.markdown("<div class='section'>", unsafe_allow_html=True)
+        st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1:
+            first_name = st.text_input("First name")
+        with c2:
+            last_name = st.text_input("Last name")
+        c3, c4 = st.columns(2)
+        with c3:
+            email = st.text_input("Email address")
+        with c4:
+            phone = st.text_input("Phone number")
+        submit = st.button("Sign in & continue", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    if submit:
+        if not first_name or not last_name or not email or not phone:
+            st.warning("Please fill First name, Last name, Email, and Phone.")
+        else:
+            ok = append_lead_to_gsheet(first_name, last_name, email, phone)
+            if ok:
+                st.success("You're signed in. Loading planner…")
+                st.session_state.signed_in = True
+                st.experimental_rerun()
+
+    # Footer
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.0 — Sign‑in writes to Google Sheet</div>", unsafe_allow_html=True)
+    st.stop()
+
+# =====================================================================
+# From here on: CALCULATOR PAGE (only after signed in)
+# =====================================================================
+
+# =========================
 # HERO
 # =========================
 st.markdown(
@@ -263,6 +307,21 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
+# =========================
+# Excel-style helpers (Excel parity)
+# =========================
+def _pow1p(x, n): return (1.0 + x) ** n
+def FV(rate, nper, pmt=0.0, pv=0.0, typ=0):
+    if abs(rate) < 1e-12: return -(pv + pmt * nper)
+    g = _pow1p(rate, nper); return -(pv * g + pmt * (1 + rate * typ) * (g - 1) / rate)
+def PV(rate, nper, pmt=0.0, fv=0.0, typ=0):
+    if abs(rate) < 1e-12: return -(fv + pmt * nper)
+    g = _pow1p(rate, nper); return -(fv + pmt * (1 + rate * typ) * (g - 1) / rate) / g
+def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
+    if nper <= 0: return 0.0
+    if abs(rate) < 1e-12: return -(fv + pv) / nper
+    g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
 # INPUTS (3-per-row, robust clamping)
@@ -527,64 +586,13 @@ st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# === Lead Capture (above CTA) ===
-with st.container():
-    st.markdown("<div class='section'>", unsafe_allow_html=True)
-    st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
-    lc1, lc2, lc3 = st.columns(3)
-    with lc1:
-        lead_name = st.text_input("Full name")
-    with lc2:
-        lead_email = st.text_input("Email address")
-    with lc3:
-        lead_phone = st.text_input("Phone number")
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# === CTA: Start Investing (writes to Sheet, then opens Ventura) ===
-st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-clicked = st.button("Start Investing Now", type="primary", key="cta_submit")
-st.markdown("</div>", unsafe_allow_html=True)
-
-if clicked:
-    if not lead_name or not lead_email or not lead_phone:
-        st.warning("Please fill your Name, Email, and Phone before continuing.")
-    else:
-        ok = append_lead_to_gsheet(lead_name, lead_email, lead_phone)
-        if ok:
-            st.success("Thanks! Your details were submitted. Redirecting…")
-
-            # set a one-shot flag to avoid multiple redirects on reruns
-            st.session_state["_redirect_once"] = True
-
-            # robust same-tab redirect (works better than window.open after async work)
-            st_html(
-                """
-                <script>
-                  (function() {
-                    // small delay so message renders before redirect
-                    setTimeout(function(){
-                      try {
-                        // Same-tab redirect is least likely to be blocked
-                        window.top.location.href = 'https://www.venturasecurities.com/';
-                      } catch (e) {
-                        window.location.href = 'https://www.venturasecurities.com/';
-                      }
-                    }, 200);
-                  })();
-                </script>
-                """,
-                height=0,
-            )
-
-            # graceful fallback if JS redirect is blocked
-            st.link_button(
-                "Continue to Ventura (click if not redirected)",
-                "https://www.venturasecurities.com/",
-                type="primary",
-                help="Opens Ventura in the same tab",
-            )
-
+# CTA: simple link (no write)
+st.markdown(
+    """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities' class='start-btn'>
+          Start Investing Now
+       </a>""",
+    unsafe_allow_html=True,
+)
 
 # Sticky Summary Footer
 st.markdown(
@@ -601,4 +609,4 @@ st.markdown(
 )
 
 # Centered version label
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.4 — Leads to Google Sheets • SIP/Lumpsum floor at 0 • ROI fixed 12%</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.0 — Sign‑in to Google Sheet • ROI fixed • SIP/Lumpsum floored • Animations</div>", unsafe_allow_html=True)
