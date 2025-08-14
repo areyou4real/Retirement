@@ -148,9 +148,24 @@ def inject_css():
           .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
 
           /* Animated row for totals (row 3) */
-          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
-          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
-          .kpi-row3[data-show="1"] { max-height:220px; opacity:1; }
+          /* Animated row for totals (row 3) */
+          .kpi-row3 {
+          transition: max-height .32s ease, opacity .24s ease, margin .24s ease, padding .24s ease;
+          overflow: hidden;
+          will-change: max-height, opacity;
+          }
+          .kpi-row3[data-show="0"] {
+          max-height: 0;
+          opacity: 0;
+          margin: 0 !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+          }
+          .kpi-row3[data-show="1"] {
+          max-height: 400px; /* plenty for 1 row of KPIs */
+          opacity: 1;
+          }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -510,14 +525,26 @@ st_html(
       (function(){{
         var row = window.parent.document.getElementById('kpi-row3');
         if(!row) return;
-        var target = '{target_attr}';
-        row.setAttribute('data-show', row.getAttribute('data-show'));
-        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 10);
+
+        var target = '{ "1" if show_totals else "0" }';
+        var current = row.getAttribute('data-show');
+
+        if (current !== target) {{
+          // ensure attribute is present
+          row.setAttribute('data-show', current);
+          // FORCE REFLOW so the browser sees a state change
+          void row.offsetWidth;  // or row.getBoundingClientRect();
+          // flip to target on next frame
+          requestAnimationFrame(function(){{
+            row.setAttribute('data-show', target);
+          }});
+        }}
       }})();
     </script>
     """,
     height=0,
 )
+
 
 # Single COUNTUP block for all number animations
 st_html(
