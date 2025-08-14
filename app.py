@@ -284,7 +284,7 @@ if not st.session_state.signed_in:
             if ok:
                 st.success("You're signed in. Loading planner…")
                 st.session_state.signed_in = True
-                st.experimental_rerun()
+                st.rerun()
 
     # Footer
     st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.0 — Sign‑in writes to Google Sheet</div>", unsafe_allow_html=True)
