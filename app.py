@@ -552,12 +552,39 @@ if clicked:
     else:
         ok = append_lead_to_gsheet(lead_name, lead_email, lead_phone)
         if ok:
-            st.success("Thanks! Your details were submitted.")
-            # Open Ventura in a new tab
+            st.success("Thanks! Your details were submitted. Redirecting…")
+
+            # set a one-shot flag to avoid multiple redirects on reruns
+            st.session_state["_redirect_once"] = True
+
+            # robust same-tab redirect (works better than window.open after async work)
             st_html(
-                "<script>window.open('https://www.venturasecurities.com/', '_blank');</script>",
+                """
+                <script>
+                  (function() {
+                    // small delay so message renders before redirect
+                    setTimeout(function(){
+                      try {
+                        // Same-tab redirect is least likely to be blocked
+                        window.top.location.href = 'https://www.venturasecurities.com/';
+                      } catch (e) {
+                        window.location.href = 'https://www.venturasecurities.com/';
+                      }
+                    }, 200);
+                  })();
+                </script>
+                """,
                 height=0,
             )
+
+            # graceful fallback if JS redirect is blocked
+            st.link_button(
+                "Continue to Ventura (click if not redirected)",
+                "https://www.venturasecurities.com/",
+                type="primary",
+                help="Opens Ventura in the same tab",
+            )
+
 
 # Sticky Summary Footer
 st.markdown(
