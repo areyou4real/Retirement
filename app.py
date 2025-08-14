@@ -277,7 +277,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.9 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.0 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -327,7 +327,7 @@ with st.container():
         hard_max_life = 110
         max_life_exp = max(min_life_exp, hard_max_life)
         default_life = min(max(90, min_life_exp), max_life_exp)
-        life_expectancy = st.number_input("Life expectancy", min_value=min_life_exp, max_value=max_life_exp, value=default_life, step=1)
+        life_expectancy = st.number_input("Life expectancy", min_value=max(min_life_exp, 0), max_value=max_life_exp, value=default_life, step=1)
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
@@ -493,7 +493,7 @@ if show_totals:
             f"</div>", unsafe_allow_html=True,
         )
 
-# Single COUNTUP block to avoid extra iframe gaps
+# Single COUNTUP block to avoid extra iframe gaps (FIXED totals lines)
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -532,9 +532,9 @@ st_html(
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
 
-        // KPI row 3 (totals)
-        run('kpi6', {int(max({total_monthly_sip}, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
-        run('kpi7', {int(max({total_lumpsum}, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
+        // KPI row 3 (totals) — FIXED: no extra braces
+        run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
+        run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
         // Snapshot
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
@@ -599,7 +599,7 @@ if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Only the columns you specified:
+    # Only the columns you specified (order preserved):
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -642,6 +642,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Version label + before-retirement caption (as requested earlier)
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.0 — Final</div>", unsafe_allow_html=True)
+# Version label + before-retirement caption
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — Totals animation fix</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
