@@ -69,7 +69,7 @@ def inject_css():
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          /* === HERO (exactly as you requested) === */
+          /* HERO */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -100,7 +100,7 @@ def inject_css():
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* EXACT KPI styles (keep) */
+          /* KPI */
           .kpi {
             background: var(--card-2);
             border:1px solid var(--ring);
@@ -126,7 +126,7 @@ def inject_css():
 
           /* Inputs */
           .stNumberInput, .stTextInput { width: 100% !important; }
-          .stNumberInput input, .stTextInput input {
+          .stNumberInput input, .stTextInput input, .stTextInput textarea {
             border:1px solid var(--ring) !important; border-radius: 10px !important;
             padding: 10px 12px !important; width: 100% !important;
             height: 44px !important;
@@ -135,8 +135,8 @@ def inject_css():
             font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important;
             font-weight: 500; letter-spacing: 0.2px;
           }
-          .stNumberInput input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-          .stNumberInput input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
+          .stNumberInput input:hover, .stTextInput input:hover, .stTextInput textarea:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+          .stNumberInput input:focus, .stTextInput input:focus, .stTextInput textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
           /* Sticky summary bar */
           .sticky-summary {
@@ -217,6 +217,9 @@ def fmt_money_indian(x):
     sign = "-" if n < 0 else ""
     return f"₹{sign}{out}"
 
+# =========================
+# HERO
+# =========================
 st.markdown(
     """
     <div class='hero'>
@@ -229,8 +232,7 @@ st.markdown(
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # =========================
-# INPUTS (NO title card; 3-per-row)
-# with robust min/max clamping to avoid Streamlit value/min errors
+# INPUTS (3-per-row, robust clamping)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
@@ -239,16 +241,12 @@ with st.container():
     r1c1, r1c2, r1c3 = st.columns(3)
 
     with r1c1:
-        # Current age (base input)
         age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
 
     with r1c2:
-        # Target retirement age depends on current age
         min_retire_age = age_now + 1
         hard_max_retire = 90
-        # Guard if min > max
         max_retire_age = max(min_retire_age, hard_max_retire)
-        # Clamp a sensible default (60) within [min, max]
         default_retire_age = min(max(60, min_retire_age), max_retire_age)
         age_retire = st.number_input(
             "Target retirement age",
@@ -259,12 +257,10 @@ with st.container():
         )
 
     with r1c3:
-        # Life expectancy depends on retirement age
         min_life_exp = age_retire + 1
         hard_max_life = 110
         max_life_exp = max(min_life_exp, hard_max_life)
-        default_life = 90
-        default_life = min(max(default_life, min_life_exp), max_life_exp)
+        default_life = min(max(90, min_life_exp), max_life_exp)
         life_expectancy = st.number_input(
             "Life expectancy",
             min_value=min_life_exp,
@@ -276,12 +272,13 @@ with st.container():
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
-    # Row 2 — Inflation, Return on existing, Monthly expense
+    # Row 2 — Inflation, Return on existing (fixed 12%), Monthly expense
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        ret_exist_pct = st.number_input("Return on existing investments (% p.a.)", min_value=0.0, max_value=20.0, value=8.0, step=0.1, format="%.1f")
+        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        ret_exist_pct = 12.0  # fixed
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
@@ -321,8 +318,12 @@ F19 = PV(F17, (F6 - F4), -F18, -F14, 1)
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
 # Gap, SIP and Lumpsum
 F20 = F19 - FV_existing_at_ret
-F21 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
-F22 = PV(F8, (F4 - F3), 0.0, -F20, 1)
+F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
+F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
+
+# Clamp negatives to 0 for display
+F21_display = max(F21_raw, 0.0)
+F22_display = max(F22_raw, 0.0)
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
@@ -366,7 +367,7 @@ with k3:
         unsafe_allow_html=True,
     )
 
-# Animate KPIs + Snapshot (CountUp.js with Indian formatting)
+# Animate KPIs (CountUp.js with Indian formatting)
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -398,18 +399,18 @@ st_html(
           try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
-        run('kpi2', {int(F21)}, {int(st.session_state.get('prev_F21', 0))});
-        run('kpi3', {int(F22)}, {int(st.session_state.get('prev_F22', 0))});
+        run('kpi2', {int(F21_display)}, {int(st.session_state.get('prev_F21', 0))});
+        run('kpi3', {int(F22_display)}, {int(st.session_state.get('prev_F22', 0))});
       }})();
     </script>
     """,
     height=0,
 )
 
-# Save previous KPI values
+# Save previous KPI values (use display-clamped for SIP/Lumpsum)
 st.session_state.prev_F19 = int(F19)
-st.session_state.prev_F21 = int(F21)
-st.session_state.prev_F22 = int(F22)
+st.session_state.prev_F21 = int(F21_display)
+st.session_state.prev_F22 = int(F22_display)
 
 # Space between KPI and next row
 st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
@@ -493,6 +494,20 @@ st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
+# === Lead Capture (above CTA) ===
+with st.container():
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
+    lc1, lc2, lc3 = st.columns(3)
+    with lc1:
+        lead_name = st.text_input("Full name")
+    with lc2:
+        lead_email = st.text_input("Email address")
+    with lc3:
+        lead_phone = st.text_input("Phone number")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # CTA: Start Investing
 st.markdown(
     """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities'>
@@ -507,7 +522,7 @@ st.markdown(
     <div class='sticky-summary'>
       <div class='summary-grid'>
         <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money_indian(F19)}</div></div>
-        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money_indian(F21)}</div></div>
+        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{fmt_money_indian(F21_display)}</div></div>
         <div><div class='hint'>Coverage now</div><div class='mono' style='font-weight:800; font-size:1.1rem;'>{coverage*100:.1f}%</div></div>
       </div>
     </div>
@@ -516,4 +531,4 @@ st.markdown(
 )
 
 # Centered version label
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.0 by Dheer</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v5.3 — SIP/Lumpsum floor at 0 • Existing ROI fixed 12% • Lead capture</div>", unsafe_allow_html=True)
