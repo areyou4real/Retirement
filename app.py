@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# One-time redirect guard (kept harmless even if unused now)
+# One-time redirect guard (harmless)
 if st.session_state.get("_redirect_once"):
     st.session_state["_redirect_once"] = False
 
@@ -156,21 +156,19 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA link button (anchor) */
-          a { text-decoration: none; }
-          .start-btn {
-            display:block;
-            margin:20px auto 40px;
-            padding:14px 28px;
-            font-size:18px; font-weight:600;
-            border:none; border-radius:9999px;
-            background-color:var(--accent); color:#fff !important;
-            cursor:pointer; text-align:center;
+          /* CTA (Streamlit button restyle) */
+          div.cta-wrap { text-align: center; }
+          div.cta-wrap button[kind="primary"] {
+            margin: 20px auto 40px;
+            padding: 14px 28px;
+            font-size: 18px; font-weight: 600;
+            border: none; border-radius: 9999px;
+            background-color: var(--accent); color: #fff;
+            cursor: pointer; text-align: center;
             transition: all 0.25s ease;
-            width: fit-content;
           }
-          .start-btn:hover {
-            background-color:var(--accent-hover);
+          div.cta-wrap button[kind="primary"]:hover {
+            background-color: var(--accent-hover);
             transform: scale(1.05);
             filter: brightness(1.08);
             box-shadow: 0 4px 14px rgba(0,0,0,0.15);
@@ -186,33 +184,58 @@ def inject_css():
 inject_css()
 
 # =========================
-# Google Sheets helper
+# Google Sheets helpers
 # =========================
-def append_lead_to_gsheet(first_name: str, last_name: str, email: str, phone: str) -> bool:
-    """Append a sign-in row to Google Sheet. Returns True on success, False otherwise."""
+def get_ws():
+    sa_info = st.secrets["gcp_service_account"]
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+    creds = Credentials.from_service_account_info(sa_info, scopes=scopes)
+    gc = gspread.authorize(creds)
+    sheet_url = st.secrets["gsheets"]["sheet_url"]
+    ws_name   = st.secrets["gsheets"].get("worksheet", "Leads")
+    sh = gc.open_by_url(sheet_url)
+    return sh.worksheet(ws_name)
+
+def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: str) -> bool:
+    """Append sign-in data."""
     try:
-        sa_info = st.secrets["gcp_service_account"]
-        scopes = [
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ]
-        creds = Credentials.from_service_account_info(sa_info, scopes=scopes)
-        gc = gspread.authorize(creds)
-
-        sheet_url = st.secrets["gsheets"]["sheet_url"]
-        ws_name   = st.secrets["gsheets"].get("worksheet", "Leads")
-        sh = gc.open_by_url(sheet_url)
-        ws = sh.worksheet(ws_name)
-
-        # Timestamp in IST
+        ws = get_ws()
         ist = pytz.timezone("Asia/Kolkata")
         now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-
-        # Append row: [timestamp, first_name, last_name, email, phone]
-        ws.append_row([now_ist, first_name.strip(), last_name.strip(), email.strip(), phone.strip()], value_input_option="USER_ENTERED")
+        ws.append_row(
+            [now_ist, first_name.strip(), last_name.strip(), email.strip(), phone.strip(), "SIGNIN"],
+            value_input_option="USER_ENTERED"
+        )
         return True
     except Exception as e:
-        st.error(f"Could not write to Google Sheet: {e}")
+        st.error(f"Could not write sign-in to Google Sheet: {e}")
+        return False
+
+def append_final_snapshot_to_gsheet(payload: dict) -> bool:
+    """Append final inputs & calculated outputs when CTA is clicked."""
+    try:
+        ws = get_ws()
+        # Order the row fields for consistency
+        ordered_keys = [
+            "timestamp_ist",
+            "first_name", "last_name", "email", "phone",
+            "age_now", "age_retire", "life_expectancy",
+            "infl_pct", "ret_exist_pct", "monthly_exp", "yearly_exp",
+            "current_invest", "legacy_goal",
+            "F17_net_real_retirement", "F18_expenses_at_start_ret", "F19_required_corpus_at_ret",
+            "FV_existing_at_ret", "F20_gap",
+            "F21_sip_monthly_display", "F22_lumpsum_today_display",
+            "F24_corpus_for_legacy", "F25_additional_sip", "F26_additional_lumpsum",
+            "coverage_pct", "status_text",
+        ]
+        row = [payload.get(k, "") for k in ordered_keys]
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        return True
+    except Exception as e:
+        st.error(f"Could not write final snapshot to Google Sheet: {e}")
         return False
 
 # =========================
@@ -247,7 +270,6 @@ if "signed_in" not in st.session_state:
     st.session_state.signed_in = False
 
 if not st.session_state.signed_in:
-    # --- Sign-in view ---
     st.markdown(
         """
         <div class='hero'>
@@ -280,14 +302,18 @@ if not st.session_state.signed_in:
         if not first_name or not last_name or not email or not phone:
             st.warning("Please fill First name, Last name, Email, and Phone.")
         else:
-            ok = append_lead_to_gsheet(first_name, last_name, email, phone)
+            ok = append_signin_to_gsheet(first_name, last_name, email, phone)
             if ok:
-                st.success("You're signed in. Loading planner…")
+                # store in session for final write
                 st.session_state.signed_in = True
+                st.session_state.user_first_name = first_name.strip()
+                st.session_state.user_last_name = last_name.strip()
+                st.session_state.user_email = email.strip()
+                st.session_state.user_phone = phone.strip()
+                st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    # Footer
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.0 — Sign‑in writes to Google Sheet</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.5 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -337,7 +363,7 @@ with st.container():
 
     with r1c2:
         min_retire_age = age_now + 1
-        hard_max_retire = 65
+        hard_max_retire = 90
         max_retire_age = max(min_retire_age, hard_max_retire)
         default_retire_age = min(max(60, min_retire_age), max_retire_age)
         age_retire = st.number_input(
@@ -350,7 +376,7 @@ with st.container():
 
     with r1c3:
         min_life_exp = age_retire + 1
-        hard_max_life = 100
+        hard_max_life = 110
         max_life_exp = max(min_life_exp, hard_max_life)
         default_life = min(max(90, min_life_exp), max_life_exp)
         life_expectancy = st.number_input(
@@ -367,16 +393,12 @@ with st.container():
     # Row 2 — Inflation, Return on existing (fixed 12%), Monthly expense
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0  # fixed constant
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
-
-    # Fixed return captions (after second row)
-    st.caption("Return on investments (% p.a.) — **fixed at 12.0%**")
-    st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
     # Row 3 — Yearly expenses (derived), Current investments, Inheritance goal
     r3c1, r3c2, r3c3 = st.columns(3)
@@ -384,7 +406,7 @@ with st.container():
         yearly_exp = monthly_exp * 12.0
         st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
     with r3c2:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
+        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=1_000_000.0, step=10_000.0, format="%.0f")
     with r3c3:
         legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
 
@@ -412,10 +434,17 @@ FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
 F20 = F19 - FV_existing_at_ret
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
-
 # Clamp negatives to 0 for display
 F21_display = max(F21_raw, 0.0)
 F22_display = max(F22_raw, 0.0)
+
+# --- NEW INHERITANCE CALCS (as per your Excel formulas) ---
+# Corpus to accumulate at retirement specifically to fund inheritance goal
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)  # =PV(F9%, (F6-F4), , -F14, 1)
+# Additional SIP to fund F24
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # =PMT(F8%/12, (F4-F3)*12, , -F24, 1)
+# Additional Lumpsum to fund F24 (per your formula uses PMT; kept exactly)
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)  # =PMT(F8%, (F4-F3), , -F24, 1)
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
@@ -429,6 +458,8 @@ status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class 
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
+if "prev_F25" not in st.session_state: st.session_state.prev_F25 = 0
+if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
 
 k1, k2, k3 = st.columns(3)
 with k1:
@@ -436,7 +467,7 @@ with k1:
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers entire expenses until retirement including inheritance</div>"
+        f"<div class='sub'>Covers entire expenses until life expectancy incl. inheritance</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -459,7 +490,7 @@ with k3:
         unsafe_allow_html=True,
     )
 
-# Animate KPIs (CountUp.js with Indian formatting)
+# Animate first KPI row
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -491,18 +522,83 @@ st_html(
           try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
-        run('kpi2', {int(F21_display)}, {int(st.session_state.get('prev_F21', 0))});
-        run('kpi3', {int(F22_display)}, {int(st.session_state.get('prev_F22', 0))});
+        run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
+        run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
       }})();
     </script>
     """,
     height=0,
 )
 
-# Save previous KPI values (use display-clamped for SIP/Lumpsum)
 st.session_state.prev_F19 = int(F19)
-st.session_state.prev_F21 = int(F21_display)
-st.session_state.prev_F22 = int(F22_display)
+st.session_state.prev_F21 = int(max(F21_display, 0))
+st.session_state.prev_F22 = int(max(F22_display, 0))
+
+# Space between KPI rows
+st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+
+# --- New KPI Row: Additional SIP & Lumpsum (Inheritance planning) ---
+a1, a2, _ = st.columns([1, 1, 1])
+with a1:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional SIP (for inheritance)</div>"
+        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
+        f"<div class='sub'>Extra monthly contribution to fund legacy</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+with a2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
+        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
+        f"<div class='sub'>One-time amount based on your formula</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+# Animate new KPI row
+st_html(
+    f"""
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
+    <script>
+      (function() {{
+        function formatIndian(num) {{
+          try {{
+            num = Math.round(num);
+            const sign = num < 0 ? "-" : "";
+            let s = Math.abs(num).toString();
+            if (s.length <= 3) return "₹" + sign + s;
+            const last3 = s.slice(-3);
+            let rest = s.slice(0, -3);
+            const parts = [];
+            while (rest.length > 2) {{
+              parts.unshift(rest.slice(-2));
+              rest = rest.slice(0, -2);
+            }}
+            if (rest.length) parts.unshift(rest);
+            return "₹" + sign + parts.join(",") + "," + last3;
+          }} catch (e) {{
+            return "₹" + num;
+          }}
+        }}
+        function run(id, end, start) {{
+          const el = window.parent.document.getElementById(id);
+          if (!el || typeof countUp === 'undefined') return;
+          const opts = {{ duration: 1.2, formattingFn: formatIndian }};
+          try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
+        }}
+        run('kpi4', {int(F25)}, {int(st.session_state.get('prev_F25', 0))});
+        run('kpi5', {int(F26)}, {int(st.session_state.get('prev_F26', 0))});
+      }})();
+    </script>
+    """,
+    height=0,
+)
+
+st.session_state.prev_F25 = int(F25)
+st.session_state.prev_F26 = int(F26)
 
 # Space between KPI and next row
 st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
@@ -586,13 +682,72 @@ st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: simple link (no write)
-st.markdown(
-    """<a href='https://www.venturasecurities.com/' target='_blank' aria-label='Start Investing at Ventura Securities' class='start-btn'>
-          Start Investing Now
-       </a>""",
-    unsafe_allow_html=True,
-)
+# === CTA: Finalize & Start Investing (writes everything to Sheets, then redirect) ===
+st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
+clicked = st.button("Finalize & Start Investing", type="primary", key="cta_submit")
+st.markdown("</div>", unsafe_allow_html=True)
+
+if clicked:
+    # Build payload for final write
+    ist = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+
+    payload = {
+        "timestamp_ist": now_ist,
+        "first_name": st.session_state.get("user_first_name", ""),
+        "last_name": st.session_state.get("user_last_name", ""),
+        "email": st.session_state.get("user_email", ""),
+        "phone": st.session_state.get("user_phone", ""),
+
+        # Inputs
+        "age_now": int(F3),
+        "age_retire": int(F4),
+        "life_expectancy": int(F6),
+        "infl_pct": float(infl_pct),
+        "ret_exist_pct": float(12.0),
+        "monthly_exp": float(F11),
+        "yearly_exp": float(F12),
+        "current_invest": float(F13),
+        "legacy_goal": float(F14),
+
+        # Outputs (core)
+        "F17_net_real_retirement": float(F17),
+        "F18_expenses_at_start_ret": float(F18),
+        "F19_required_corpus_at_ret": float(F19),
+        "FV_existing_at_ret": float(FV_existing_at_ret),
+        "F20_gap": float(F20),
+        "F21_sip_monthly_display": float(F21_display),
+        "F22_lumpsum_today_display": float(F22_display),
+
+        # New inheritance-based calcs
+        "F24_corpus_for_legacy": float(F24),
+        "F25_additional_sip": float(F25),
+        "F26_additional_lumpsum": float(F26),
+
+        "coverage_pct": float(coverage * 100.0),
+        "status_text": status_text,
+    }
+
+    ok = append_final_snapshot_to_gsheet(payload)
+    if ok:
+        st.success("Saved! Redirecting to Ventura…")
+        st.session_state["_redirect_once"] = True
+        st_html(
+            """
+            <script>
+              setTimeout(function(){
+                try { window.top.location.href = 'https://www.venturasecurities.com/'; }
+                catch(e) { window.location.href = 'https://www.venturasecurities.com/'; }
+              }, 250);
+            </script>
+            """,
+            height=0,
+        )
+        st.link_button(
+            "Continue to Ventura (click if not redirected)",
+            "https://www.venturasecurities.com/",
+            type="primary",
+        )
 
 # Sticky Summary Footer
 st.markdown(
@@ -608,5 +763,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Centered version label
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v6.0 — Sign‑in to Google Sheet • ROI fixed • SIP/Lumpsum floored • Animations</div>", unsafe_allow_html=True)
+# Version label
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.0 — Final snapshot to Sheets • New inheritance KPIs</div>", unsafe_allow_html=True)
+
+# Moved ROI captions here (below version label), as requested
+st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
+st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
