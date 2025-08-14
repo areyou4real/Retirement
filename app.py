@@ -262,7 +262,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7 — Personalized title + minimal Sheets schema</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
