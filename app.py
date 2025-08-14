@@ -101,7 +101,7 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA (Streamlit button restyle) */
+          /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
           div.cta-wrap button[kind="primary"] {
             margin: 12px auto 18px;
@@ -110,6 +110,7 @@ def inject_css():
             border: none; border-radius: 9999px;
             background-color: var(--accent); color: #fff;
             cursor: pointer; text-align: center; transition: all 0.25s ease;
+            display: inline-block;
           }
           div.cta-wrap button[kind="primary"]:hover {
             background-color: var(--accent-hover);
@@ -121,26 +122,12 @@ def inject_css():
           /* Section width limiter */
           .section { max-width: 760px; margin: 0 auto 10px; }
 
-
           /* Collapse spacing from Streamlit HTML iframes (used by st_html / CountUp) */
-          div[data-testid="stIFrame"]{
-          margin:0 !important;
-          padding:0 !important;
-          }
+          div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
           div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
-          height:0 !important;
-          min-height:0 !important;
-          border:0 !important;
-          display:block !important;
-          margin:0 !important;
-          padding:0 !important;
-          overflow:hidden !important;
+            height:0 !important; min-height:0 !important; border:0 !important; display:block !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
           }
-          /* Remove any accidental top gap after these iframes */
-          div[data-testid="stIFrame"] + div{
-          margin-top:0 !important;
-          }
-
+          div[data-testid="stIFrame"] + div{ margin-top:0 !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -267,7 +254,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.3 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.5 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -365,7 +352,7 @@ F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
 F21_display = max(F21_raw, 0.0)  # never negative
 F22_display = max(F22_raw, 0.0)  # never negative
 
-# New inheritance formulas
+# Inheritance-specific
 F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
 F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)
 F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)
@@ -382,6 +369,8 @@ if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
 if "prev_F25" not in st.session_state: st.session_state.prev_F25 = 0
 if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
+if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
+if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
 # Row 1: Corpus | Monthly SIP | Lumpsum
 k1, k2, k3 = st.columns(3)
@@ -410,13 +399,13 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# ---- Small space BETWEEN KPI rows (requested: a little bit) ----
+# Small space BETWEEN KPI rows
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# Row 2: (blank) | Additional SIP | Additional Lumpsum
+# Row 2: (spacer) | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
 with a1:
-    st.markdown("&nbsp;", unsafe_allow_html=True)  # spacer to keep alignment under first KPI
+    st.markdown("&nbsp;", unsafe_allow_html=True)
 with a2:
     st.markdown(
         f"<div class='kpi'>"
@@ -434,7 +423,7 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Animate KPIs
+# Single COUNTUP block to avoid extra iframe gaps
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -482,14 +471,14 @@ st_html(
     height=0,
 )
 
-
+# Save previous KPI values
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
 st.session_state.prev_F25 = int(F25)
 st.session_state.prev_F26 = int(F26)
 
-# ---- Reduced space before Preparedness/Snapshot (1-2 lines) ----
+# Reduced space before Preparedness/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # Preparedness & Snapshot
@@ -500,9 +489,6 @@ with cA:
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
-
-if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
-if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
 with cB:
     st.markdown("<div class='card'><h3>Snapshot</h3>", unsafe_allow_html=True)
@@ -521,13 +507,12 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Animate Snapshot values
-
+# Update prev snapshot values
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# ---- Reduced space before CTA (1-2 lines) ----
-st.markdown("<div style='height:1px'></div>", unsafe_allow_html=True)
+# Reduced space before CTA
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # CTA: Finalize & Start Investing (writes everything to Sheets, then proper redirect)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
@@ -600,5 +585,5 @@ st.markdown(
 )
 
 # Version label + ONLY the before-retirement caption here
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.4 — Spacing polish</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.6 — Centered CTA & collapsed iframes</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
