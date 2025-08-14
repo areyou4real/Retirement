@@ -246,7 +246,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.1 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.3 — Sign‑in to Sheets</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -309,7 +309,7 @@ with st.container():
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
-    # Put THIS caption back under row 2 (as requested)
+    # Keep THIS caption under row 2 (as requested)
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
     # Row 3
@@ -341,8 +341,8 @@ FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
 F20 = F19 - FV_existing_at_ret
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
-F21_display = max(F21_raw, 0.0)
-F22_display = max(F22_raw, 0.0)
+F21_display = max(F21_raw, 0.0)  # never negative
+F22_display = max(F22_raw, 0.0)  # never negative
 
 # New inheritance formulas
 F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
@@ -389,10 +389,13 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
+# ---- Small space BETWEEN KPI rows (requested: a little bit) ----
+st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+
 # Row 2: (blank) | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
 with a1:
-    st.markdown("&nbsp;", unsafe_allow_html=True)  # spacer to keep alignment
+    st.markdown("&nbsp;", unsafe_allow_html=True)  # spacer to keep alignment under first KPI
 with a2:
     st.markdown(
         f"<div class='kpi'>"
@@ -456,8 +459,8 @@ st.session_state.prev_F22 = int(max(F22_display, 0))
 st.session_state.prev_F25 = int(F25)
 st.session_state.prev_F26 = int(F26)
 
-# Tighter spacing to Preparedness/Snapshot
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+# ---- Reduced space before Preparedness/Snapshot (1-2 lines) ----
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # Preparedness & Snapshot
 cA, cB = st.columns([1.2, 1])
@@ -527,8 +530,8 @@ st_html(
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# Tighter spacing to CTA
-st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+# ---- Reduced space before CTA (1-2 lines) ----
+st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # CTA: Finalize & Start Investing (writes everything to Sheets, then proper redirect)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
@@ -571,7 +574,7 @@ if clicked:
     if ok:
         st.success("Saved! Redirecting to Ventura…")
         st.session_state["_redirect_once"] = True
-        # Use a reliable same-tab navigation (prevents iframe-embed issue)
+        # Reliable same-tab navigation
         st_html(
             """
             <script>
@@ -600,7 +603,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Version label (only "before retirement" caption stays below this; the "after retirement" caption was moved back up)
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.2 — KPI alignment • redirect fix • spacing tweaks</div>", unsafe_allow_html=True)
+# Version label + ONLY the before-retirement caption here
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.4 — Spacing polish</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
-# (No second caption here—per your request, the 'after retirement' caption is moved back below row 2)
