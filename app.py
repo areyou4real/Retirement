@@ -583,7 +583,7 @@ st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # Centered CTA wrapper (keeps your styling)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-save_clicked = st.button("Save & get Ventura link", type="primary", key="cta_submit")
+save_clicked = st.button("Start Investing Now", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
 
 if save_clicked:
@@ -608,14 +608,14 @@ if save_clicked:
 
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
-        st.success("Saved! Click the button below to open Ventura in a new tab.")
+        st.success("Please click the link below if not redirected")
 
         # A *real* anchor link (user click opens new tab reliably)
         st.markdown(
             """
             <div class='cta-wrap'>
               <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
-                Open Ventura
+                Here
               </a>
             </div>
             """,
