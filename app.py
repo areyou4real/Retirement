@@ -337,7 +337,7 @@ with st.container():
 
     with r1c2:
         min_retire_age = age_now + 1
-        hard_max_retire = 90
+        hard_max_retire = 65
         max_retire_age = max(min_retire_age, hard_max_retire)
         default_retire_age = min(max(60, min_retire_age), max_retire_age)
         age_retire = st.number_input(
@@ -350,7 +350,7 @@ with st.container():
 
     with r1c3:
         min_life_exp = age_retire + 1
-        hard_max_life = 110
+        hard_max_life = 100
         max_life_exp = max(min_life_exp, hard_max_life)
         default_life = min(max(90, min_life_exp), max_life_exp)
         life_expectancy = st.number_input(
@@ -367,15 +367,15 @@ with st.container():
     # Row 2 — Inflation, Return on existing (fixed 12%), Monthly expense
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0  # fixed constant
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
 
     # Fixed return captions (after second row)
-    st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
+    st.caption("Return on investments (% p.a.) — **fixed at 12.0%**")
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 
     # Row 3 — Yearly expenses (derived), Current investments, Inheritance goal
@@ -384,7 +384,7 @@ with st.container():
         yearly_exp = monthly_exp * 12.0
         st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
     with r3c2:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=1_000_000.0, step=10_000.0, format="%.0f")
+        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
     with r3c3:
         legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
 
