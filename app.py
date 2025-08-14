@@ -6,6 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import pytz
+import re
 
 # =========================
 # App Config
@@ -85,7 +86,7 @@ def inject_css():
           .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
           .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
 
-          /* Inputs */
+          /* Inputs (Streamlit) */
           .stNumberInput, .stTextInput, .stTextArea { width: 100% !important; }
           .stNumberInput input, .stTextInput input, textarea {
             border:1px solid var(--ring) !important; border-radius: 10px !important; padding: 10px 12px !important; width: 100% !important; height: 44px !important; box-sizing: border-box; transition: all 0.25s ease;
@@ -93,6 +94,16 @@ def inject_css():
           }
           .stNumberInput input:hover, .stTextInput input:hover, textarea:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
           .stNumberInput input:focus, .stTextInput input:focus, textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
+
+          /* Our custom money inputs */
+          .money-wrap input {
+            border:1px solid var(--ring) !important; border-radius: 10px !important;
+            padding: 10px 12px !important; width: 100% !important; height: 44px !important; box-sizing: border-box;
+            transition: all 0.25s ease;
+            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important; font-weight: 500; letter-spacing: 0.2px;
+          }
+          .money-wrap input:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+          .money-wrap input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
 
           /* Sticky summary bar */
           .sticky-summary {
@@ -106,7 +117,7 @@ def inject_css():
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 8px 0 14px;
+            margin: 8px 0 12px;
           }
           .cta-wrap .stButton > button {
             padding: 12px 24px;
@@ -123,8 +134,13 @@ def inject_css():
             box-shadow: 0 3px 12px rgba(0,0,0,0.12);
           }
 
-          /* Section width limiter */
+          /* Section width limiter + note-card */
           .section { max-width: 760px; margin: 0 auto 10px; }
+          .note-card {
+            background: var(--card); border:1px solid var(--ring); border-radius: 10px; padding: 8px 12px;
+            max-width: 460px; margin: 6px auto 10px; text-align:center; color: var(--muted);
+            font-weight: 600; letter-spacing: .2px;
+          }
 
           /* Collapse spacing from Streamlit HTML iframes (used by st_html / CountUp) */
           div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
@@ -167,14 +183,6 @@ def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: 
         return False
 
 def append_final_snapshot_to_gsheet_minimal(row_values: list) -> bool:
-    """
-    Writes ONLY the requested columns, in order:
-
-    Date | First Name | Last Name | Email | Phone Number | Current age | Retirement | Life Expectancy |
-    Inflation | Return on existing investments | Current monthly expenses | Yearly expenses | Current investments |
-    Inheritance to leave | Required corpus at retirement | Existing corpus at retirement | Gap to fund |
-    Monthly SIP needed | Lumpsum needed today | Additional SIP | Additional Lumpsum | Coverage
-    """
     try:
         ws = get_ws()
         ws.append_row(row_values, value_input_option="USER_ENTERED")
@@ -184,13 +192,14 @@ def append_final_snapshot_to_gsheet_minimal(row_values: list) -> bool:
         return False
 
 # =========================
-# Indian Number Formatting
+# Helpers: Indian number formatting & custom money inputs
 # =========================
-def fmt_money_indian(x):
+def fmt_indian_plain(x):
+    """Indian comma format without currency symbol."""
     try:
         n = int(round(float(x)))
     except Exception:
-        return f"₹{x}"
+        return str(x)
     s = str(abs(n))
     if len(s) <= 3:
         out = s
@@ -204,8 +213,42 @@ def fmt_money_indian(x):
         if rest:
             parts.insert(0, rest)
         out = ",".join(parts) + "," + last3
-    sign = "-" if n < 0 else ""
-    return f"₹{sign}{out}"
+    return ("-" if n < 0 else "") + out
+
+def fmt_money_indian(x):
+    return f"₹{fmt_indian_plain(x)}"
+
+def parse_money_input(s: str) -> float:
+    """Parse Indian formatted numeric string to float."""
+    if s is None:
+        return 0.0
+    # Remove anything except digits and dot
+    cleaned = re.sub(r"[^\d.]", "", str(s))
+    if cleaned == "" or cleaned == ".":
+        return 0.0
+    try:
+        return float(cleaned)
+    except:
+        return 0.0
+
+def money_input(label: str, value: float, min_value: float, max_value: float, key: str):
+    """Text input with Indian commas. Returns clamped float."""
+    # Prepare default text (persist per session)
+    default_txt = st.session_state.get(f"{key}_txt", fmt_indian_plain(value))
+    st.markdown("<div class='money-wrap'>", unsafe_allow_html=True)
+    txt = st.text_input(label, value=default_txt, key=key)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Parse & clamp
+    parsed = parse_money_input(txt)
+    parsed = max(min_value, min(max_value, parsed))
+
+    # Re-format text to keep commas consistent in UI
+    formatted = fmt_indian_plain(parsed)
+    if txt != formatted:
+        st.session_state[f"{key}_txt"] = formatted
+
+    return float(parsed)
 
 def html_escape(s: str) -> str:
     return (
@@ -262,7 +305,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.8 — Money inputs with Indian commas + limits</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -299,6 +342,9 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
 # =========================
 # INPUTS (3-per-row, robust clamping)
 # =========================
+MAX_MONTHLY = 5_000_000       # 50,00,000
+MAX_BIG     = 1_000_000_000   # 1,00,00,00,000
+
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
@@ -325,12 +371,12 @@ with st.container():
     # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
     with r2c2:
-        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0
     with r2c3:
-        monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, value=50_000.0, step=1_000.0, format="%.0f")
+        monthly_exp = money_input("Current monthly expenses (₹)", value=50_000.0, min_value=0.0, max_value=MAX_MONTHLY, key="monthly_exp")
 
     # Fixed caption under row 2
     st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
@@ -338,12 +384,13 @@ with st.container():
     # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
     with r3c1:
-        yearly_exp = monthly_exp * 12.0
-        st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
+        yearly_exp = float(monthly_exp) * 12.0
+        # Disabled display with commas
+        st.text_input("Yearly expenses (₹)", value=fmt_indian_plain(yearly_exp), disabled=True, key="yearly_exp_display")
     with r3c2:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
+        current_invest = money_input("Current investments (₹)", value=1_000_000.0, min_value=0.0, max_value=MAX_BIG, key="current_invest")
     with r3c3:
-        legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, value=0.0, step=10_000.0, format="%.0f")
+        legacy_goal = money_input("Inheritance to leave (₹)", value=0.0, min_value=0.0, max_value=MAX_BIG, key="legacy_goal")
 
     st.caption("Taxes are not modeled in this version.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -353,8 +400,8 @@ F3, F4, F6 = age_now, age_retire, life_expectancy
 F5 = years_left
 ret_pre_pct = 12.0
 ret_post_pct = 6.0
-F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exist_pct/100.0
-F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
+F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, (ret_exist_pct/100.0)
+F11, F12, F13, F14 = float(monthly_exp), float(yearly_exp), float(current_invest), float(legacy_goal)
 
 # CALCS
 F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
@@ -387,6 +434,9 @@ if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
 if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
 if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
+# Small "Pick one" card above SIP & Lumpsum
+st.markdown("<div class='note-card'>Pick one: <b>Monthly SIP</b> or <b>Lumpsum Today</b></div>", unsafe_allow_html=True)
+
 # Row 1: Corpus | Monthly SIP | Lumpsum
 k1, k2, k3 = st.columns(3)
 with k1:
@@ -414,8 +464,8 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Small space BETWEEN KPI rows
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+# Tiny space BETWEEN KPI rows
+st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
 # Row 2: (spacer) | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
@@ -493,13 +543,13 @@ st.session_state.prev_F22 = int(max(F22_display, 0))
 st.session_state.prev_F25 = int(F25)
 st.session_state.prev_F26 = int(F26)
 
-# Reduced space before Preparedness/Snapshot
+# Reduced space before Status/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Preparedness & Snapshot
+# Status of Retirement Goal & Snapshot
 cA, cB = st.columns([1.2, 1])
 with cA:
-    st.markdown("<div class='card'><h3>Preparedness</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
     st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
@@ -529,7 +579,7 @@ st.session_state.prev_snap_gap = int(gap)
 # Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: Finalize & Start Investing (writes minimal fields to Sheets, then redirect)
+# CTA: Finalize & Start Investing (writes minimal fields to Sheets, then strong redirect)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
 clicked = st.button("Finalize & Start Investing", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
@@ -538,7 +588,7 @@ if clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Build row in the EXACT order requested
+    # Build row in EXACT order requested
     row = [
         now_ist,                                              # Date
         st.session_state.get("user_first_name", ""),          # First Name
@@ -561,25 +611,24 @@ if clicked:
         float(F22_display),                                   # Lumpsum needed today (non-negative)
         float(F25),                                           # Additional SIP
         float(F26),                                           # Additional Lumpsum
-        float(round(coverage * 100.0, 1)),                    # Coverage (percent)
+        float(round(coverage * 100.0, 1)),                    # Coverage (%)
     ]
 
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
         st.success("Saved! Redirecting to Ventura…")
         st.session_state["_redirect_once"] = True
+        # Robust, single-path same-tab redirect
         st_html(
             """
             <script>
-              setTimeout(function(){
-                try { window.open('https://www.venturasecurities.com/', '_self'); }
-                catch(e) { window.location.href = 'https://www.venturasecurities.com/'; }
-              }, 200);
+              (function(){
+                window.location.assign('https://www.venturasecurities.com/');
+              })();
             </script>
             """,
             height=0,
         )
-        st.link_button("Continue to Ventura (if not redirected)", "https://www.venturasecurities.com/", type="primary")
 
 # Sticky Summary
 st.markdown(
@@ -596,5 +645,5 @@ st.markdown(
 )
 
 # Version + fixed before‑retirement caption
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.7 — Personalized title + minimal Sheets schema</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.8 — Money inputs w/ Indian commas, limits, Pick-one card, new title</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
