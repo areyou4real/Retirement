@@ -463,16 +463,25 @@ st_html(
           const opts = {{ duration: 1.0, formattingFn: formatIndian }};
           try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
+
+        // KPI row 1
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
+
+        // KPI row 2 (additional)
         run('kpi4', {int(F25)}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(F26)}, {int(st.session_state.get('prev_F26', 0))});
+
+        // Snapshot
+        run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
+        run('snap2', {int(max(F20, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
     </script>
     """,
     height=0,
 )
+
 
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
@@ -513,41 +522,7 @@ with cB:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Animate Snapshot values
-st_html(
-    f"""
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
-    <script>
-      (function() {{
-        function formatIndian(num) {{
-          try {{
-            num = Math.round(num);
-            const sign = num < 0 ? "-" : "";
-            let s = Math.abs(num).toString();
-            if (s.length <= 3) return "₹" + sign + s;
-            const last3 = s.slice(-3);
-            let rest = s.slice(0, -3);
-            const parts = [];
-            while (rest.length > 2) {{
-              parts.unshift(rest.slice(-2));
-              rest = rest.slice(0, -2);
-            }}
-            if (rest.length) parts.unshift(rest);
-            return "₹" + sign + parts.join(",") + "," + last3;
-          }} catch (e) {{ return "₹" + num; }}
-        }}
-        function run(id, end, start) {{
-          const el = window.parent.document.getElementById(id);
-          if (!el || typeof countUp === 'undefined') return;
-          const opts = {{ duration: 1.0, formattingFn: formatIndian }};
-          try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
-        }}
-        run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
-        run('snap2', {int(gap)}, {int(st.session_state.get('prev_snap_gap', 0))});
-      }})();
-    </script>
-    """,
-    height=0,
-)
+
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
