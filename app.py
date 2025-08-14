@@ -128,6 +128,14 @@ def inject_css():
             height:0 !important; min-height:0 !important; border:0 !important; display:block !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
           }
           div[data-testid="stIFrame"] + div{ margin-top:0 !important; }
+
+          /* Link-style CTA after save */
+          .start-btn {
+            display:inline-block; margin:12px auto 18px; padding:12px 24px;
+            background: var(--accent); color: #fff; border-radius:9999px; font-weight:600;
+            text-decoration:none; transition: all .2s ease;
+          }
+          .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
         </style>
         """,
         unsafe_allow_html=True,
@@ -527,8 +535,8 @@ st_html(
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
 
         // KPI row 3 (totals)
-        run('kpi6', {int(max({total_monthly_sip}, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
-        run('kpi7', {int(max({total_lumpsum}, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
+        run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
+        run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
         // Snapshot
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
