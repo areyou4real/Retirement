@@ -579,15 +579,18 @@ st.session_state.prev_snap_gap = int(gap)
 # Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: Finalize & Start Investing (writes minimal fields to Sheets, then strong redirect)
+# --- Replace your current CTA block (clicked handling & redirect) with this ---
+
+# Centered CTA wrapper (keeps your styling)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-clicked = st.button("Finalize & Start Investing", type="primary", key="cta_submit")
+save_clicked = st.button("Save & get Ventura link", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
 
-if clicked:
+if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
+    # Build the minimal ordered row you wanted
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -598,35 +601,26 @@ if clicked:
         float(infl_pct), 12.0,
         float(F11), float(F12), float(F13), float(F14),
         float(F19), float(FV_existing_at_ret), float(max(F20, 0.0)),
-        float(F21_display), float(F22_display),
+        float(max(F21_display, 0.0)), float(max(F22_display, 0.0)),
         float(F25), float(F26),
         float(round(coverage * 100.0, 1)),
     ]
 
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
-        st.success("Saved! Opening Ventura in a new tab…")
-        st.session_state["_redirect_once"] = True
+        st.success("Saved! Click the button below to open Ventura in a new tab.")
 
-        # Open Ventura in a new tab/window from this user click (works inside sandboxed iframes)
-        st_html(
+        # A *real* anchor link (user click opens new tab reliably)
+        st.markdown(
             """
-            <script>
-              (function(){
-                // New tab to avoid frame-navigation block by X-Frame-Options
-                const url = 'https://www.venturasecurities.com/';
-                try { window.top.open(url, '_blank', 'noopener'); }
-                catch(e) {
-                  try { window.open(url, '_blank', 'noopener'); } catch(e2){}
-                }
-              })();
-            </script>
+            <div class='cta-wrap'>
+              <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
+                Open Ventura
+              </a>
+            </div>
             """,
-            height=0,
+            unsafe_allow_html=True,
         )
-
-        # Also render a visible link (in case the browser blocks popups)
-        st.link_button("Continue to Ventura", "https://www.venturasecurities.com/", type="primary")
 
 
 # Sticky Summary
