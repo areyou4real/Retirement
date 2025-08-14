@@ -101,10 +101,14 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* CTA (centered Streamlit button) */
-          div.cta-wrap { text-align: center; }
-          div.cta-wrap button[kind="primary"] {
-            margin: 12px auto 18px;
+          /* CTA (centered Streamlit button) — UPDATED */
+          .cta-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 8px 0 14px;
+          }
+          .cta-wrap .stButton > button {
             padding: 12px 24px;
             font-size: 16px; font-weight: 600;
             border: none; border-radius: 9999px;
@@ -112,7 +116,7 @@ def inject_css():
             cursor: pointer; text-align: center; transition: all 0.25s ease;
             display: inline-block;
           }
-          div.cta-wrap button[kind="primary"]:hover {
+          .cta-wrap .stButton > button:hover {
             background-color: var(--accent-hover);
             transform: scale(1.04);
             filter: brightness(1.06);
