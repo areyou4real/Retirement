@@ -454,7 +454,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 a1, a2, a3 = st.columns(3)
 with a1:
     # Optional "Pick one" card above SIP/Lumpsum
-    st.markdown("<div class='kpi'><div class='label'>Pick one</div><div class='sub'>Monthly SIP or Lumpsum</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='kpi'><div class='value'>Monthly SIP OR Lumpsum Today</div></div>", unsafe_allow_html=True)
 with a2:
     st.markdown(
         f"<div class='kpi'>"
