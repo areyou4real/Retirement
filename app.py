@@ -102,9 +102,6 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
-          /* KPI grid used for animated row 3 */
-          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
-
           /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
           div.cta-wrap button[kind="primary"] {
@@ -471,31 +468,40 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Row 3 totals — grid WRAPPED so we can animate (cards now identical size)
+# Row 3 totals — Streamlit columns wrapped in an animating container
 initial_attr = "1" if prev_show else "0"
 target_attr  = "1" if show_totals else "0"
 
-st.markdown(
-    f"""
-    <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
-      <div class="kpi-grid">
-        <!-- keep spacing & size exactly same as other KPIs -->
-        <div class="kpi" aria-hidden="true" style="opacity:0;">&nbsp;</div>
-        <div class="kpi">
-          <div class="label">Total Monthly SIP (incl. additional)</div>
-          <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
-          <div class="sub">Base SIP + additional for legacy</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Total Lumpsum (incl. additional)</div>
-          <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
-          <div class="sub">Base lumpsum + additional for legacy</div>
-        </div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown(f"<div id='kpi-row3' class='kpi-row3' data-show='{initial_attr}'>", unsafe_allow_html=True)
+
+t1, t2, t3 = st.columns(3)
+
+with t1:
+    # identical .kpi sizing; just invisible so the row aligns with others
+    st.markdown("<div class='kpi' aria-hidden='true' style='opacity:0;'>&nbsp;</div>", unsafe_allow_html=True)
+
+with t2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
+        f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
+        f"<div class='sub'>Base SIP + additional for legacy</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+with t3:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Total Lumpsum (incl. additional)</div>"
+        f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
+        f"<div class='sub'>Base lumpsum + additional for legacy</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 # Toggle attribute AFTER render to animate appear/disappear
 st_html(
