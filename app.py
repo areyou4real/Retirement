@@ -585,48 +585,35 @@ clicked = st.button("Finalize & Start Investing", type="primary", key="cta_submi
 st.markdown("</div>", unsafe_allow_html=True)
 
 if clicked:
-    ist = pytz.timezone("Asia/Kolkata")
-    now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-
+    # Prepare minimal row with only required fields
     row = [
-        now_ist,
-        st.session_state.get("user_first_name", ""),
-        st.session_state.get("user_last_name", ""),
-        st.session_state.get("user_email", ""),
-        st.session_state.get("user_phone", ""),
-        int(F3), int(F4), int(F6),
-        float(infl_pct), 12.0,
-        float(F11), float(F12), float(F13), float(F14),
-        float(F19), float(FV_existing_at_ret), float(max(F20, 0.0)),
-        float(F21_display), float(F22_display),
-        float(F25), float(F26),
-        float(round(coverage * 100.0, 1)),
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        first_name, last_name, email, phone,
+        age_now, age_retire, life_expect, inflation,
+        return_existing, monthly_expenses, yearly_expenses,
+        current_investments, inheritance,
+        required_corpus, existing_corpus, gap_to_fund,
+        sip_needed, lumpsum_needed,
+        add_sip, add_lumpsum, coverage
     ]
 
     ok = append_final_snapshot_to_gsheet_minimal(row)
+
     if ok:
-        st.success("Saved! Opening Ventura in a new tab…")
-        st.session_state["_redirect_once"] = True
-
-        # Open Ventura in a new tab/window from this user click (works inside sandboxed iframes)
-        st_html(
+        st.success(f"Saved! {first_name}'s retirement plan is ready.")
+        st.markdown(
             """
-            <script>
-              (function(){
-                // New tab to avoid frame-navigation block by X-Frame-Options
-                const url = 'https://www.venturasecurities.com/';
-                try { window.top.open(url, '_blank', 'noopener'); }
-                catch(e) {
-                  try { window.open(url, '_blank', 'noopener'); } catch(e2){}
-                }
-              })();
-            </script>
+            <div style='text-align:center; margin-top: 16px;'>
+                <a href="https://www.venturasecurities.com/" target="_blank" style="text-decoration:none;">
+                    <button class="start-btn" style="display:inline-block;">Continue to Ventura</button>
+                </a>
+            </div>
             """,
-            height=0,
+            unsafe_allow_html=True
         )
+    else:
+        st.error("Could not save your plan. Please try again.")
 
-        # Also render a visible link (in case the browser blocks popups)
-        st.link_button("Continue to Ventura", "https://www.venturasecurities.com/", type="primary")
 
 
 # Sticky Summary
