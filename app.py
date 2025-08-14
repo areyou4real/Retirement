@@ -102,6 +102,9 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
+          /* KPI grid used for animated row 3 */
+          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
+
           /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
           div.cta-wrap button[kind="primary"] {
@@ -142,13 +145,14 @@ def inject_css():
           .panel {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
+            text-align: center;
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); text-align:center; } /* same size, just surface + centered */
+          .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
 
           /* Animated row for totals (row 3) */
-          .kpi-row3 { transition: all .28s ease; }
-          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; overflow:hidden; }
+          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
+          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
           .kpi-row3[data-show="1"] { max-height:220px; opacity:1; }
         </style>
         """,
@@ -185,7 +189,6 @@ def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: 
         return False
 
 def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
-    """Row must match the reduced ordered fields you requested."""
     try:
         ws = get_ws()
         ws.append_row(row, value_input_option="USER_ENTERED")
@@ -219,7 +222,6 @@ def fmt_money_indian(x):
     return f"₹{sign}{out}"
 
 def number_to_words_short(n: float) -> str:
-    """Small helper: '5 thousand', '7.25 lakh', '2.10 crore'."""
     try:
         n = float(n)
     except:
@@ -395,6 +397,9 @@ total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
 total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
 show_totals = (F25 > 1e-6) or (F26 > 1e-6)
 
+# Keep previous show state for animation
+prev_show = st.session_state.get("prev_show_totals", False)
+
 # =========================
 # KPI ROWS (aligned + animations)
 # =========================
@@ -441,7 +446,6 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 # Row 2: Pick one | Additional SIP | Additional Lumpsum
 a1, a2, a3 = st.columns(3)
 with a1:
-    # Same structure/min-height as other KPI cards
     st.markdown(
         "<div class='kpi'>"
         "<div class='label'>Pick one</div>"
@@ -467,31 +471,51 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Row 3 totals — always render container; animate show/hide
-totals_data_attr = "1" if show_totals else "0"
-st.markdown(f"<div class='kpi-row3' data-show='{totals_data_attr}'>", unsafe_allow_html=True)
-t1, t2, t3 = st.columns(3)
-with t1:
-    st.markdown("&nbsp;", unsafe_allow_html=True)
-with t2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
-        f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
-        f"<div class='sub'>Base SIP + additional for legacy</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with t3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Total Lumpsum (incl. additional)</div>"
-        f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
-        f"<div class='sub'>Base lumpsum + additional for legacy</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-st.markdown("</div>", unsafe_allow_html=True)  # end .kpi-row3
+# Row 3 totals — HTML grid WRAPPED so we can animate
+initial_attr = "1" if prev_show else "0"
+target_attr  = "1" if show_totals else "0"
 
-# Single COUNTUP block to avoid extra iframe gaps
+st.markdown(
+    f"""
+    <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
+      <div class="kpi-grid">
+        <div class="kpi" style="visibility:hidden">&nbsp;</div>
+        <div class="kpi">
+          <div class="label">Total Monthly SIP (incl. additional)</div>
+          <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
+          <div class="sub">Base SIP + additional for legacy</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Total Lumpsum (incl. additional)</div>
+          <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
+          <div class="sub">Base lumpsum + additional for legacy</div>
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Toggle attribute AFTER render to animate appear/disappear
+st_html(
+    f"""
+    <script>
+      (function(){{
+        var row = window.parent.document.getElementById('kpi-row3');
+        if(!row) return;
+        // force reflow then set target state to trigger transition
+        var target = '{target_attr}';
+        row.setAttribute('data-show', row.getAttribute('data-show')); 
+        setTimeout(function(){{
+          row.setAttribute('data-show', target);
+        }}, 10);
+      }})();
+    </script>
+    """,
+    height=0,
+)
+
+# Single COUNTUP block for all number animations
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -543,7 +567,7 @@ st_html(
     height=0,
 )
 
-# Save previous KPI values
+# Save previous KPI values and show state
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
@@ -551,11 +575,12 @@ st.session_state.prev_F25 = int(max(F25, 0))
 st.session_state.prev_F26 = int(max(F26, 0))
 st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
 st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
+st.session_state.prev_show_totals = show_totals
 
 # Reduced space before Status/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Status of Retirement Goal & Snapshot (same size as before, kpi surface & centered)
+# Status of Retirement Goal & Snapshot (same size, KPI surface, centered)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
@@ -597,7 +622,6 @@ if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-    # Reduced ordered fields you asked for:
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -615,7 +639,6 @@ if save_clicked:
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
         st.success("Saved! Opening Ventura in a new tab…")
-        # Open in new tab (reliable even if X-Frame-Options prevents same-tab)
         st_html(
             """
             <script>
@@ -625,7 +648,6 @@ if save_clicked:
             """,
             height=0,
         )
-        # Fallback visible button just in case
         st.markdown(
             """
             <div class='cta-wrap'>
@@ -651,7 +673,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Version label + both fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.9 — animations & centering</div>", unsafe_allow_html=True)
+# Version label + fixed-rate captions at the bottom
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.0 — KPI row 3 animation fixed</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
