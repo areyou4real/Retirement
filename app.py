@@ -32,21 +32,16 @@ def inject_css():
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
+            /* Light tokens (default) */
             --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3; --chip: #eef2ff;
             --accent: #2563EB; --accent-hover: #1E40AF; --warn: #fbbc04; --danger: #ff6b6b; --ok: #34d399;
           }
           @media (prefers-color-scheme: dark) {
-            :root {
-              --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
-              --accent: #3B82F6; --accent-hover: #2563EB;
-            }
+            :root { --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
+                    --accent: #3B82F6; --accent-hover: #2563EB; }
           }
 
-          html, body, [class*="css"] {
-            background: var(--bg); color: var(--text);
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            font-size:16px; line-height:1.6;
-          }
+          html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:16px; line-height:1.6; }
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
@@ -63,7 +58,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Cards (original size) */
+          /* Cards (original sizing) */
           .card {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
@@ -74,15 +69,15 @@ def inject_css():
           /* KPI */
           .kpi {
             background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
-            min-height: 112px; display:flex; flex-direction:column; justify-content:center;
+            min-height: 112px;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
-          .kpi .sub { color: var(--muted); font-size: .85rem; min-height: 1em; }
+          .kpi .sub { color: var(--muted); font-size: .85rem; }
 
           /* Snapshot metric */
-          .snap-metric { margin: 6px 0 10px; text-align:center; }
+          .snap-metric { margin: 6px 0 10px; }
           .snap-metric .label { color: var(--muted); font-size:.92rem; }
           .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
 
@@ -146,19 +141,19 @@ def inject_css():
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
 
-          /* Panel (for Status/Snapshot) with KPI surface but same size as .card */
+          /* Panel: same size/layout as .card but with KPI surface + centered content */
           .panel {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
             text-align: center;
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); } /* same size, KPI surface */
+          .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
 
           /* Animated row for totals (row 3) */
           .kpi-row3 { transition: all .28s ease; overflow:hidden; }
-          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
-          .kpi-row3[data-show="1"] { max-height:220px; opacity:1; }
+          .kpi-row3[data-state="closed"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
+          .kpi-row3[data-state="open"]   { max-height:220px; opacity:1; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -286,7 +281,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — animations & sizing</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -388,10 +383,10 @@ F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
 F21_display = max(F21_raw, 0.0)  # never negative
 F22_display = max(F22_raw, 0.0)  # never negative
 
-# Inheritance-specific
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
+# Inheritance-specific (as per your formulas)
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)                  # Corpus only for inheritance
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)   # Additional SIP for legacy
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                 # Additional Lumpsum for legacy
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
@@ -476,13 +471,13 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Row 3 totals — HTML grid WRAPPED so we can animate (size matched to KPIs)
-initial_attr = "1" if prev_show else "0"
-target_attr  = "1" if show_totals else "0"
+# Row 3 totals — HTML grid WRAPPED so we can animate open/close
+initial_state = "open" if prev_show else "closed"
+target_state  = "open" if show_totals else "closed"
 
 st.markdown(
     f"""
-    <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
+    <div id="kpi-row3" class="kpi-row3" data-state="{initial_state}">
       <div class="kpi-grid">
         <div class="kpi" style="visibility:hidden">&nbsp;</div>
         <div class="kpi">
@@ -501,16 +496,65 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Toggle attribute AFTER render to animate appear/disappear
+# JS to animate row 3 (appear/disappear) — all inside string, with booleans injected
 st_html(
     f"""
     <script>
       (function(){{
-        var row = window.parent.document.getElementById('kpi-row3');
-        if(!row) return;
-        var target = {'"1"' if show_totals else '"0"'};
-        row.setAttribute('data-show', row.getAttribute('data-show')); 
-        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 10);
+        var wantOpen = {str(show_totals).lower()};
+        function waitForEl(id, cb, tries) {{
+          tries = tries || 0;
+          var el = window.parent.document.getElementById(id);
+          if (el) {{ cb(el); return; }}
+          if (tries > 120) return;
+          setTimeout(function(){{ waitForEl(id, cb, tries+1); }}, 25);
+        }}
+        function openRow(row) {{
+          row.setAttribute('data-state','open');
+          row.style.opacity = '1';
+          row.style.transition = 'none';
+          row.style.maxHeight = '0px';
+          requestAnimationFrame(function(){{
+            row.style.transition = 'max-height .35s ease, opacity .25s ease, margin .25s ease, padding .25s ease';
+            requestAnimationFrame(function(){{
+              row.style.maxHeight = row.scrollHeight + 'px';
+            }});
+          }});
+        }}
+        function closeRow(row) {{
+          row.setAttribute('data-state','closed');
+          row.style.maxHeight = row.scrollHeight + 'px';
+          requestAnimationFrame(function(){{
+            row.style.maxHeight = '0px';
+            row.style.opacity = '0';
+          }});
+        }}
+        waitForEl('kpi-row3', function(row){{
+          // Initialize state if first render
+          if (!row.hasAttribute('data-state')) {{
+            row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
+            row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
+            row.style.opacity = wantOpen ? '1' : '0';
+          }} else {{
+            var isOpen = row.getAttribute('data-state') === 'open';
+            if (wantOpen && !isOpen) openRow(row);
+            if (!wantOpen && isOpen) closeRow(row);
+            if (wantOpen && isOpen) {{
+              // keep height in sync on re-render
+              row.style.maxHeight = row.scrollHeight + 'px';
+            }}
+          }}
+          // ResizeObserver to keep smooth when contents change
+          try {{
+            var RO = window.parent.ResizeObserver || ResizeObserver;
+            var ro = new RO(function(){{
+              if (row.getAttribute('data-state') === 'open') {{
+                row.style.maxHeight = row.scrollHeight + 'px';
+              }}
+            }});
+            ro.observe(row);
+          }} catch(e){{}}
+        }});
       }})();
     </script>
     """,
@@ -676,6 +720,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — row3 sizing + animation stable</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
