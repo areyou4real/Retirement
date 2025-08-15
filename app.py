@@ -340,9 +340,9 @@ with st.container():
     # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0, max_value=20, value=5, step=1")
     with r2c2:
-        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
@@ -420,7 +420,7 @@ with k1:
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
+        f"<div class='sub'>Covers expenses till life expectancy</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k2:
@@ -459,7 +459,7 @@ with a2:
         f"<div class='kpi'>"
         f"<div class='label'>Additional SIP (for inheritance)</div>"
         f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>Extra monthly to fund legacy</div>"
+        f"<div class='sub'></div>"
         f"</div>", unsafe_allow_html=True,
     )
 with a3:
@@ -467,7 +467,7 @@ with a3:
         f"<div class='kpi'>"
         f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
         f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>As per your formula</div>"
+        f"<div class='sub'></div>"
         f"</div>", unsafe_allow_html=True,
     )
 
@@ -483,12 +483,12 @@ st.markdown(
         <div class="kpi">
           <div class="label">Total Monthly SIP (incl. additional)</div>
           <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
-          <div class="sub">Base SIP + additional for legacy</div>
+          <div class="sub">Base SIP + additional</div>
         </div>
         <div class="kpi">
           <div class="label">Total Lumpsum (incl. additional)</div>
           <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
-          <div class="sub">Base lumpsum + additional for legacy</div>
+          <div class="sub">Base lumpsum + additional</div>
         </div>
       </div>
     </div>
@@ -720,6 +720,7 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
+
