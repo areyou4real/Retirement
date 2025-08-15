@@ -340,7 +340,7 @@ with st.container():
     # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0, max_value=20, value=5, step=1")
+        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0, max_value=20, value=5, step=1)
     with r2c2:
         st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0
