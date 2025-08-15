@@ -102,6 +102,9 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
+          /* KPI grid used for animated row 3 */
+          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
+
           /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
           div.cta-wrap button[kind="primary"] {
@@ -146,24 +149,11 @@ def inject_css():
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
-          /* Animated row for totals (row 3) — JS drives max-height for smooth open/close */
-          
-          .kpi-row3{
-          overflow: hidden;
-          transition: max-height .35s ease, opacity .25s ease, margin .25s ease, padding .25s ease;
-          will-change: max-height, opacity;
-          }
-          .kpi-row3[data-state="closed"]{
-          max-height: 0;
-          opacity: 0;
-          margin: 0 !important;
-          padding-top: 0 !important;
-          padding-bottom: 0 !important;
-          }
-          .kpi-row3[data-state="open"]{
-          opacity: 1;
-          /* max-height is set dynamically by JS to row.scrollHeight + 'px' */
-          }
+
+          /* Animated row for totals (row 3) */
+          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
+          .kpi-row3[data-state="closed"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
+          .kpi-row3[data-state="open"]   { max-height:220px; opacity:1; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -291,7 +281,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v7.9 — animations & centering</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -393,10 +383,10 @@ F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
 F21_display = max(F21_raw, 0.0)  # never negative
 F22_display = max(F22_raw, 0.0)  # never negative
 
-# Inheritance-specific
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
+# Inheritance-specific (as per your formulas)
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)                  # Corpus only for inheritance
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)   # Additional SIP for legacy
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                 # Additional Lumpsum for legacy
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
@@ -481,108 +471,95 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Row 3 totals — Streamlit columns wrapped in an animating container
-initial_attr = "1" if prev_show else "0"
-target_attr  = "1" if show_totals else "0"
+# Row 3 totals — HTML grid WRAPPED so we can animate open/close
+initial_state = "open" if prev_show else "closed"
+target_state  = "open" if show_totals else "closed"
 
-st.markdown(f"<div id='kpi-row3' class='kpi-row3' data-show='{initial_attr}'>", unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div id="kpi-row3" class="kpi-row3" data-state="{initial_state}">
+      <div class="kpi-grid">
+        <div class="kpi" style="visibility:hidden">&nbsp;</div>
+        <div class="kpi">
+          <div class="label">Total Monthly SIP (incl. additional)</div>
+          <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
+          <div class="sub">Base SIP + additional for legacy</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Total Lumpsum (incl. additional)</div>
+          <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
+          <div class="sub">Base lumpsum + additional for legacy</div>
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-t1, t2, t3 = st.columns(3)
-
-with t1:
-    # identical .kpi sizing; just invisible so the row aligns with others
-    st.markdown("<div class='kpi' aria-hidden='true' style='opacity:0;'>&nbsp;</div>", unsafe_allow_html=True)
-
-with t2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
-        f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
-        f"<div class='sub'>Base SIP + additional for legacy</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-with t3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Total Lumpsum (incl. additional)</div>"
-        f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
-        f"<div class='sub'>Base lumpsum + additional for legacy</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-
+# JS to animate row 3 (appear/disappear) — all inside string, with booleans injected
 st_html(
     f"""
     <script>
-      (function(){
-        var wantOpen = {"true" if show_totals else "false"};
-
-        function waitForEl(id, cb, tries=0){
+      (function(){{
+        var wantOpen = {str(show_totals).lower()};
+        function waitForEl(id, cb, tries) {{
+          tries = tries || 0;
           var el = window.parent.document.getElementById(id);
-          if(el){ cb(el); return; }
-          if(tries > 80) return;
-          setTimeout(function(){ waitForEl(id, cb, tries+1); }, 25);
-        }
-
-        function openRow(row){
+          if (el) {{ cb(el); return; }}
+          if (tries > 120) return;
+          setTimeout(function(){{ waitForEl(id, cb, tries+1); }}, 25);
+        }}
+        function openRow(row) {{
           row.setAttribute('data-state','open');
           row.style.opacity = '1';
           row.style.transition = 'none';
           row.style.maxHeight = '0px';
-          requestAnimationFrame(function(){
+          requestAnimationFrame(function(){{
             row.style.transition = 'max-height .35s ease, opacity .25s ease, margin .25s ease, padding .25s ease';
-            requestAnimationFrame(function(){
+            requestAnimationFrame(function(){{
               row.style.maxHeight = row.scrollHeight + 'px';
-            });
-          });
-        }
-
-        function closeRow(row){
+            }});
+          }});
+        }}
+        function closeRow(row) {{
           row.setAttribute('data-state','closed');
           row.style.maxHeight = row.scrollHeight + 'px';
-          requestAnimationFrame(function(){
+          requestAnimationFrame(function(){{
             row.style.maxHeight = '0px';
             row.style.opacity = '0';
-          });
-        }
-
-        waitForEl('kpi-row3', function(row){
-          if(!row.hasAttribute('data-state')){
+          }});
+        }}
+        waitForEl('kpi-row3', function(row){{
+          // Initialize state if first render
+          if (!row.hasAttribute('data-state')) {{
             row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
             row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
             row.style.opacity = wantOpen ? '1' : '0';
-          } else {
+          }} else {{
             var isOpen = row.getAttribute('data-state') === 'open';
             if (wantOpen && !isOpen) openRow(row);
             if (!wantOpen && isOpen) closeRow(row);
-            if (wantOpen && isOpen){
+            if (wantOpen && isOpen) {{
+              // keep height in sync on re-render
               row.style.maxHeight = row.scrollHeight + 'px';
-            }
-          }
-          try {
-            var ro = new (window.parent.ResizeObserver || ResizeObserver)(function(){
-              if(row.getAttribute('data-state') === 'open'){
+            }}
+          }}
+          // ResizeObserver to keep smooth when contents change
+          try {{
+            var RO = window.parent.ResizeObserver || ResizeObserver;
+            var ro = new RO(function(){{
+              if (row.getAttribute('data-state') === 'open') {{
                 row.style.maxHeight = row.scrollHeight + 'px';
-              }
-            });
+              }}
+            }});
             ro.observe(row);
-          } catch(e){}
-        });
-      })();
+          }} catch(e){{}}
+        }});
+      }})();
     </script>
     """,
     height=0,
 )
-
-
-
-
-
 
 # Single COUNTUP block for all number animations
 st_html(
@@ -743,6 +720,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — Row‑3 KPI sizing unified</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — animated KPI row 3 (fix)</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
