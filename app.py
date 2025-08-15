@@ -146,26 +146,24 @@ def inject_css():
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
-
-          /* Animated row for totals (row 3) */
-          /* Animated row for totals (row 3) */
-          .kpi-row3 {
-          transition: max-height .32s ease, opacity .24s ease, margin .24s ease, padding .24s ease;
+          /* Animated row for totals (row 3) — JS drives max-height for smooth open/close */
+          
+          .kpi-row3{
           overflow: hidden;
+          transition: max-height .35s ease, opacity .25s ease, margin .25s ease, padding .25s ease;
           will-change: max-height, opacity;
           }
-          .kpi-row3[data-show="0"] {
+          .kpi-row3[data-state="closed"]{
           max-height: 0;
           opacity: 0;
           margin: 0 !important;
           padding-top: 0 !important;
           padding-bottom: 0 !important;
           }
-          .kpi-row3[data-show="1"] {
-          max-height: 400px; /* plenty for 1 row of KPIs */
+          .kpi-row3[data-state="open"]{
           opacity: 1;
+          /* max-height is set dynamically by JS to row.scrollHeight + 'px' */
           }
-
         </style>
         """,
         unsafe_allow_html=True,
@@ -523,27 +521,51 @@ st_html(
     f"""
     <script>
       (function(){{
+        // Find the row in the parent document (Streamlit host)
         var row = window.parent.document.getElementById('kpi-row3');
         if(!row) return;
 
-        var target = '{ "1" if show_totals else "0" }';
-        var current = row.getAttribute('data-show');
+        // Desired open/closed state from Python:
+        var wantOpen = { 'true' if show_totals else 'false' };
 
-        if (current !== target) {{
-          // ensure attribute is present
-          row.setAttribute('data-show', current);
-          // FORCE REFLOW so the browser sees a state change
-          void row.offsetWidth;  // or row.getBoundingClientRect();
-          // flip to target on next frame
-          requestAnimationFrame(function(){{
-            row.setAttribute('data-show', target);
-          }});
+        // Initialize state attribute if missing
+        if (!row.hasAttribute('data-state')) {{
+          row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
+          row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
+          return;
+        }}
+
+        var isOpen = row.getAttribute('data-state') === 'open';
+
+        // Helper to force a reflow (so transitions always fire)
+        function reflow(el) {{ void el.offsetWidth; }}
+
+        if (wantOpen && !isOpen) {{
+          // OPEN: go from 0px -> scrollHeight
+          row.setAttribute('data-state', 'open');
+          row.style.maxHeight = '0px';
+          reflow(row);
+          row.style.maxHeight = row.scrollHeight + 'px';
+        }} else if (!wantOpen && isOpen) {{
+          // CLOSE: go from current scrollHeight -> 0px
+          row.style.maxHeight = row.scrollHeight + 'px';
+          reflow(row);
+          row.style.maxHeight = '0px';
+          row.setAttribute('data-state', 'closed');
+        }} else {{
+          // Keep height in sync if content changed size
+          if (wantOpen) {{
+            row.style.maxHeight = row.scrollHeight + 'px';
+          }} else {{
+            row.style.maxHeight = '0px';
+          }}
         }}
       }})();
     </script>
     """,
     height=0,
 )
+
 
 
 # Single COUNTUP block for all number animations
