@@ -522,7 +522,6 @@ st_html(
       (function(){
         var wantOpen = {"true" if show_totals else "false"};
 
-        // Wait until the host DOM has the row
         function waitForEl(id, cb, tries=0){
           var el = window.parent.document.getElementById(id);
           if(el){ cb(el); return; }
@@ -579,6 +578,7 @@ st_html(
     """,
     height=0,
 )
+
 
 
 
