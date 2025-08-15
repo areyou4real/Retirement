@@ -32,21 +32,16 @@ def inject_css():
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
+            /* Light tokens (default) */
             --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3; --chip: #eef2ff;
             --accent: #2563EB; --accent-hover: #1E40AF; --warn: #fbbc04; --danger: #ff6b6b; --ok: #34d399;
           }
           @media (prefers-color-scheme: dark) {
-            :root {
-              --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
-              --accent: #3B82F6; --accent-hover: #2563EB;
-            }
+            :root { --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
+                    --accent: #3B82F6; --accent-hover: #2563EB; }
           }
 
-          html, body, [class*="css"] {
-            background: var(--bg); color: var(--text);
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            font-size:16px; line-height:1.6;
-          }
+          html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:16px; line-height:1.6; }
           .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
@@ -63,7 +58,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Cards */
+          /* Cards (original sizing) */
           .card {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
@@ -71,28 +66,28 @@ def inject_css():
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* KPI tile — fixed, identical height across ALL rows */
+          /* KPI (ORIGINAL — do not change sizing) */
           .kpi {
-            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px;
-            text-align:center; transition: all 0.25s ease;
-            display:flex; flex-direction:column; justify-content:center; align-items:center;
-            height: 120px;
+            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
+            min-height: 112px;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .kpi .label,
-          .kpi .value,
-          .kpi .sub {
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+          .kpi .label { color: var(--muted); font-size: .95rem; }
+          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+          .kpi .sub { color: var(--muted); font-size: .85rem; }
+
+          /* THIRD ROW KPI — match .kpi exactly so sizing is identical */
+          .kpi-totals {
+            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
+            min-height: 112px; width: 100%; height: 100%; box-sizing: border-box;
           }
-          .kpi .label { color: var(--muted); font-size: .95rem; line-height:1.2; }
-          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; line-height:1.2; }
-          .kpi .sub { color: var(--muted); font-size: .85rem; line-height:1.15; }
+          .kpi-totals:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+          .kpi-totals .label { color: var(--muted); font-size: .95rem; }
+          .kpi-totals .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+          .kpi-totals .sub { color: var(--muted); font-size: .85rem; }
 
-          /* A 3-up grid for *every* KPI row (so widths match row-to-row) */
-          .kpi-row { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
-
-          /* Snapshot metric (centered) */
-          .snap-metric { margin: 6px 0 10px; text-align:center; }
+          /* Snapshot metric */
+          .snap-metric { margin: 6px 0 10px; }
           .snap-metric .label { color: var(--muted); font-size:.92rem; }
           .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
 
@@ -116,6 +111,9 @@ def inject_css():
           }
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
+
+          /* KPI grid used for animated row 3 */
+          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
 
           /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
@@ -153,19 +151,19 @@ def inject_css():
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
 
-          /* Panel (for Status/Snapshot) with KPI surface but same outer size */
+          /* Panel: same size/layout as .card but with KPI surface + centered content */
           .panel {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
             text-align: center;
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); }
+          .panel.kpi-surface { background: var(--card-2); } /* same size, just surface */
 
           /* Animated row for totals (row 3) */
           .kpi-row3 { transition: all .28s ease; overflow:hidden; }
           .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
-          .kpi-row3[data-show="1"] { max-height: 480px; opacity:1; } /* large enough to avoid clipping */
+          .kpi-row3[data-show="1"] { max-height:220px; opacity:1; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -293,7 +291,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — all KPI rows unify sizing</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — fixed sizes + animations</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -413,75 +411,91 @@ show_totals = (F25 > 1e-6) or (F26 > 1e-6)
 prev_show = st.session_state.get("prev_show_totals", False)
 
 # =========================
-# KPI ROWS (all three use the same grid so sizes match)
+# KPI ROWS (aligned + animations)
 # =========================
+if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
+if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
+if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
+if "prev_F25" not in st.session_state: st.session_state.prev_F25 = 0
+if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
+if "prev_total_monthly" not in st.session_state: st.session_state.prev_total_monthly = 0
+if "prev_total_lumpsum" not in st.session_state: st.session_state.prev_total_lumpsum = 0
+if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
+if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
-# Row 1 (grid)
-st.markdown(
-    f"""
-    <div class="kpi-row">
-      <div class="kpi">
-        <div class="label">Required corpus at retirement</div>
-        <div id="kpi1" class="value">{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>
-        <div class="sub">Covers expenses till life expectancy incl. inheritance</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Monthly SIP needed</div>
-        <div id="kpi2" class="value">{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>
-        <div class="sub">Contributed at the start of each month</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Lumpsum needed today</div>
-        <div id="kpi3" class="value">{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>
-        <div class="sub">One‑time investment</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# Row 1: Corpus | Monthly SIP | Lumpsum
+k1, k2, k3 = st.columns(3)
+with k1:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Required corpus at retirement</div>"
+        f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
+        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with k2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Monthly SIP needed</div>"
+        f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
+        f"<div class='sub'>Contributed at the start of each month</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with k3:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Lumpsum needed today</div>"
+        f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
+        f"<div class='sub'>One‑time investment</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
 
 # Small space BETWEEN KPI rows
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# Row 2 (grid)
-st.markdown(
-    f"""
-    <div class="kpi-row">
-      <div class="kpi">
-        <div class="label">Pick one</div>
-        <div class="value">Monthly SIP OR Lumpsum Today</div>
-        <div class="sub">&nbsp;</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Additional SIP (for inheritance)</div>
-        <div id="kpi4" class="value">{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>
-        <div class="sub">Extra monthly to fund legacy</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Additional Lumpsum (for inheritance)</div>
-        <div id="kpi5" class="value">{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>
-        <div class="sub">As per your formula</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# Row 2: Pick one | Additional SIP | Additional Lumpsum
+a1, a2, a3 = st.columns(3)
+with a1:
+    st.markdown(
+        "<div class='kpi'>"
+        "<div class='label'>Pick one</div>"
+        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
+        "<div class='sub'>&nbsp;</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+with a2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional SIP (for inheritance)</div>"
+        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
+        f"<div class='sub'>Extra monthly to fund legacy</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with a3:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
+        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
+        f"<div class='sub'>As per your formula</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
 
-# Row 3 totals — same grid, inside animated wrapper
+# Row 3 totals — HTML grid WRAPPED so we can animate (uses .kpi-totals to MATCH sizing)
 initial_attr = "1" if prev_show else "0"
 target_attr  = "1" if show_totals else "0"
 
 st.markdown(
     f"""
     <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
-      <div class="kpi-row">
-        <div class="kpi" style="visibility:hidden">&nbsp;</div>
-        <div class="kpi">
+      <div class="kpi-grid">
+        <div class="kpi-totals" style="visibility:hidden">&nbsp;</div>
+        <div class="kpi-totals">
           <div class="label">Total Monthly SIP (incl. additional)</div>
           <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
           <div class="sub">Base SIP + additional for legacy</div>
         </div>
-        <div class="kpi">
+        <div class="kpi-totals">
           <div class="label">Total Lumpsum (incl. additional)</div>
           <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
           <div class="sub">Base lumpsum + additional for legacy</div>
@@ -492,17 +506,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Toggle attribute AFTER render to animate appear/disappear (force reflow)
+# Toggle attribute AFTER render to animate appear/disappear
 st_html(
     f"""
     <script>
       (function(){{
         var row = window.parent.document.getElementById('kpi-row3');
         if(!row) return;
-        var target = {'"1"' if show_totals else '"0"'};
-        row.setAttribute('data-show', row.getAttribute('data-show'));
-        void row.getBoundingClientRect(); // force reflow
-        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 0);
+        var target = '{target_attr}';
+        row.setAttribute('data-show', row.getAttribute('data-show')); 
+        setTimeout(function(){{
+          row.setAttribute('data-show', target);
+        }}, 10);
       }})();
     </script>
     """,
@@ -616,6 +631,7 @@ if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
+    # Ordered fields requested
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -668,6 +684,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — all KPI rows unify sizing</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.1 — fixed sizes + animations (totals row scoped)</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
