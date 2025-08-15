@@ -520,20 +520,19 @@ st_html(
     f"""
     <script>
       (function(){
-        var wantOpen = { 'true' if show_totals else 'false' };
+        var wantOpen = {"true" if show_totals else "false"};
 
         // Wait until the host DOM has the row
         function waitForEl(id, cb, tries=0){
           var el = window.parent.document.getElementById(id);
           if(el){ cb(el); return; }
-          if(tries > 80) return; // ~2s max (25ms * 80)
+          if(tries > 80) return;
           setTimeout(function(){ waitForEl(id, cb, tries+1); }, 25);
         }
 
         function openRow(row){
           row.setAttribute('data-state','open');
           row.style.opacity = '1';
-          // start from 0 then expand to scrollHeight using double RAF to ensure transition
           row.style.transition = 'none';
           row.style.maxHeight = '0px';
           requestAnimationFrame(function(){
@@ -546,7 +545,6 @@ st_html(
 
         function closeRow(row){
           row.setAttribute('data-state','closed');
-          // go from current height to 0
           row.style.maxHeight = row.scrollHeight + 'px';
           requestAnimationFrame(function(){
             row.style.maxHeight = '0px';
@@ -555,7 +553,6 @@ st_html(
         }
 
         waitForEl('kpi-row3', function(row){
-          // Initialize if fresh
           if(!row.hasAttribute('data-state')){
             row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
             row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
@@ -565,12 +562,9 @@ st_html(
             if (wantOpen && !isOpen) openRow(row);
             if (!wantOpen && isOpen) closeRow(row);
             if (wantOpen && isOpen){
-              // keep height synced if numbers change
               row.style.maxHeight = row.scrollHeight + 'px';
             }
           }
-
-          // Keep max-height in sync while open (numbers animate & content height changes)
           try {
             var ro = new (window.parent.ResizeObserver || ResizeObserver)(function(){
               if(row.getAttribute('data-state') === 'open'){
@@ -585,6 +579,7 @@ st_html(
     """,
     height=0,
 )
+
 
 
 
