@@ -516,55 +516,76 @@ with t3:
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-# Toggle attribute AFTER render to animate appear/disappear
 st_html(
     f"""
     <script>
-      (function(){{
-        // Find the row in the parent document (Streamlit host)
-        var row = window.parent.document.getElementById('kpi-row3');
-        if(!row) return;
-
-        // Desired open/closed state from Python:
+      (function(){
         var wantOpen = { 'true' if show_totals else 'false' };
 
-        // Initialize state attribute if missing
-        if (!row.hasAttribute('data-state')) {{
-          row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
-          row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
-          return;
-        }}
+        // Wait until the host DOM has the row
+        function waitForEl(id, cb, tries=0){
+          var el = window.parent.document.getElementById(id);
+          if(el){ cb(el); return; }
+          if(tries > 80) return; // ~2s max (25ms * 80)
+          setTimeout(function(){ waitForEl(id, cb, tries+1); }, 25);
+        }
 
-        var isOpen = row.getAttribute('data-state') === 'open';
-
-        // Helper to force a reflow (so transitions always fire)
-        function reflow(el) {{ void el.offsetWidth; }}
-
-        if (wantOpen && !isOpen) {{
-          // OPEN: go from 0px -> scrollHeight
-          row.setAttribute('data-state', 'open');
+        function openRow(row){
+          row.setAttribute('data-state','open');
+          row.style.opacity = '1';
+          // start from 0 then expand to scrollHeight using double RAF to ensure transition
+          row.style.transition = 'none';
           row.style.maxHeight = '0px';
-          reflow(row);
+          requestAnimationFrame(function(){
+            row.style.transition = 'max-height .35s ease, opacity .25s ease, margin .25s ease, padding .25s ease';
+            requestAnimationFrame(function(){
+              row.style.maxHeight = row.scrollHeight + 'px';
+            });
+          });
+        }
+
+        function closeRow(row){
+          row.setAttribute('data-state','closed');
+          // go from current height to 0
           row.style.maxHeight = row.scrollHeight + 'px';
-        }} else if (!wantOpen && isOpen) {{
-          // CLOSE: go from current scrollHeight -> 0px
-          row.style.maxHeight = row.scrollHeight + 'px';
-          reflow(row);
-          row.style.maxHeight = '0px';
-          row.setAttribute('data-state', 'closed');
-        }} else {{
-          // Keep height in sync if content changed size
-          if (wantOpen) {{
-            row.style.maxHeight = row.scrollHeight + 'px';
-          }} else {{
+          requestAnimationFrame(function(){
             row.style.maxHeight = '0px';
-          }}
-        }}
-      }})();
+            row.style.opacity = '0';
+          });
+        }
+
+        waitForEl('kpi-row3', function(row){
+          // Initialize if fresh
+          if(!row.hasAttribute('data-state')){
+            row.setAttribute('data-state', wantOpen ? 'open' : 'closed');
+            row.style.maxHeight = wantOpen ? (row.scrollHeight + 'px') : '0px';
+            row.style.opacity = wantOpen ? '1' : '0';
+          } else {
+            var isOpen = row.getAttribute('data-state') === 'open';
+            if (wantOpen && !isOpen) openRow(row);
+            if (!wantOpen && isOpen) closeRow(row);
+            if (wantOpen && isOpen){
+              // keep height synced if numbers change
+              row.style.maxHeight = row.scrollHeight + 'px';
+            }
+          }
+
+          // Keep max-height in sync while open (numbers animate & content height changes)
+          try {
+            var ro = new (window.parent.ResizeObserver || ResizeObserver)(function(){
+              if(row.getAttribute('data-state') === 'open'){
+                row.style.maxHeight = row.scrollHeight + 'px';
+              }
+            });
+            ro.observe(row);
+          } catch(e){}
+        });
+      })();
     </script>
     """,
     height=0,
 )
+
 
 
 
