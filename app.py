@@ -63,7 +63,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Cards (original size) */
+          /* Cards */
           .card {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
@@ -71,12 +71,12 @@ def inject_css():
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* KPI — fixed, identical height across ALL rows */
+          /* KPI tile — fixed, identical height across ALL rows */
           .kpi {
             background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px;
             text-align:center; transition: all 0.25s ease;
             display:flex; flex-direction:column; justify-content:center; align-items:center;
-            height: 120px;  /* <<< fixed height so row-3 matches row-1/2 exactly */
+            height: 120px;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .kpi .label,
@@ -87,6 +87,9 @@ def inject_css():
           .kpi .label { color: var(--muted); font-size: .95rem; line-height:1.2; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; line-height:1.2; }
           .kpi .sub { color: var(--muted); font-size: .85rem; line-height:1.15; }
+
+          /* A 3-up grid for *every* KPI row (so widths match row-to-row) */
+          .kpi-row { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
 
           /* Snapshot metric (centered) */
           .snap-metric { margin: 6px 0 10px; text-align:center; }
@@ -113,9 +116,6 @@ def inject_css():
           }
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
-
-          /* KPI grid used for animated row 3 */
-          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; max-width:760px; margin:0 auto; }
 
           /* CTA (centered Streamlit button) */
           div.cta-wrap { text-align: center; }
@@ -153,14 +153,14 @@ def inject_css():
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
 
-          /* Panel (for Status/Snapshot) with KPI surface but same size as .card */
+          /* Panel (for Status/Snapshot) with KPI surface but same outer size */
           .panel {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
             text-align: center;
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); } /* same size, KPI surface */
+          .panel.kpi-surface { background: var(--card-2); }
 
           /* Animated row for totals (row 3) */
           .kpi-row3 { transition: all .28s ease; overflow:hidden; }
@@ -293,7 +293,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — row3 animation + equal sizing</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — all KPI rows unify sizing</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -413,84 +413,68 @@ show_totals = (F25 > 1e-6) or (F26 > 1e-6)
 prev_show = st.session_state.get("prev_show_totals", False)
 
 # =========================
-# KPI ROWS (aligned + animations)
+# KPI ROWS (all three use the same grid so sizes match)
 # =========================
-if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
-if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
-if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
-if "prev_F25" not in st.session_state: st.session_state.prev_F25 = 0
-if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
-if "prev_total_monthly" not in st.session_state: st.session_state.prev_total_monthly = 0
-if "prev_total_lumpsum" not in st.session_state: st.session_state.prev_total_lumpsum = 0
-if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
-if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
-# Row 1: Corpus | Monthly SIP | Lumpsum
-k1, k2, k3 = st.columns(3)
-with k1:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Required corpus at retirement</div>"
-        f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with k2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Monthly SIP needed</div>"
-        f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
-        f"<div class='sub'>Contributed at the start of each month</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with k3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Lumpsum needed today</div>"
-        f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
-        f"<div class='sub'>One‑time investment</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
+# Row 1 (grid)
+st.markdown(
+    f"""
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="label">Required corpus at retirement</div>
+        <div id="kpi1" class="value">{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>
+        <div class="sub">Covers expenses till life expectancy incl. inheritance</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Monthly SIP needed</div>
+        <div id="kpi2" class="value">{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>
+        <div class="sub">Contributed at the start of each month</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Lumpsum needed today</div>
+        <div id="kpi3" class="value">{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>
+        <div class="sub">One‑time investment</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Small space BETWEEN KPI rows
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# Row 2: Pick one | Additional SIP | Additional Lumpsum
-a1, a2, a3 = st.columns(3)
-with a1:
-    st.markdown(
-        "<div class='kpi'>"
-        "<div class='label'>Pick one</div>"
-        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
-        "<div class='sub'>&nbsp;</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-with a2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional SIP (for inheritance)</div>"
-        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>Extra monthly to fund legacy</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with a3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
-        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>As per your formula</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
+# Row 2 (grid)
+st.markdown(
+    f"""
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="label">Pick one</div>
+        <div class="value">Monthly SIP OR Lumpsum Today</div>
+        <div class="sub">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Additional SIP (for inheritance)</div>
+        <div id="kpi4" class="value">{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>
+        <div class="sub">Extra monthly to fund legacy</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Additional Lumpsum (for inheritance)</div>
+        <div id="kpi5" class="value">{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>
+        <div class="sub">As per your formula</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Row 3 totals — HTML grid WRAPPED so we can animate (size matched to KPIs)
+# Row 3 totals — same grid, inside animated wrapper
 initial_attr = "1" if prev_show else "0"
 target_attr  = "1" if show_totals else "0"
 
 st.markdown(
     f"""
     <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
-      <div class="kpi-grid">
+      <div class="kpi-row">
         <div class="kpi" style="visibility:hidden">&nbsp;</div>
         <div class="kpi">
           <div class="label">Total Monthly SIP (incl. additional)</div>
@@ -508,7 +492,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Toggle attribute AFTER render to animate appear/disappear (force reflow for reliability)
+# Toggle attribute AFTER render to animate appear/disappear (force reflow)
 st_html(
     f"""
     <script>
@@ -516,7 +500,6 @@ st_html(
         var row = window.parent.document.getElementById('kpi-row3');
         if(!row) return;
         var target = {'"1"' if show_totals else '"0"'};
-        // keep current as-is, then force reflow, then toggle
         row.setAttribute('data-show', row.getAttribute('data-show'));
         void row.getBoundingClientRect(); // force reflow
         setTimeout(function(){{ row.setAttribute('data-show', target); }}, 0);
@@ -685,6 +668,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — row3 animation + equal sizing</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — all KPI rows unify sizing</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
