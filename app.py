@@ -48,7 +48,7 @@ def inject_css():
           .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
-          /* HERO (exact size/feel retained) */
+          /* HERO */
           .hero {
             padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
             background:
@@ -61,7 +61,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Cards: original sizing */
+          /* Content cards */
           .card {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
@@ -69,7 +69,10 @@ def inject_css():
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* KPI card — used in all rows for identical size */
+          /* KPI grid (used for ALL KPI rows to keep identical sizing) */
+          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:18px; max-width:760px; margin:0 auto; }
+
+          /* KPI card — identical everywhere */
           .kpi {
             background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center;
             transition: all 0.25s ease; min-height: 118px; display:flex; flex-direction:column; justify-content:center;
@@ -78,6 +81,14 @@ def inject_css():
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
+
+          /* Panels (Status/Snapshot) use KPI surface but keep original sizing */
+          .panel {
+            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
+            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
+            text-align: center;
+          }
+          .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
 
           /* Snapshot metric */
           .snap-metric { margin: 6px 0 10px; text-align:center; }
@@ -108,6 +119,14 @@ def inject_css():
           /* Section width limiter */
           .section { max-width: 760px; margin: 0 auto 10px; }
 
+          /* Row gaps between KPI grids (same space between row1→row2 and row2→row3) */
+          .kpi-row-gap { height:22px; }
+
+          /* Animated row (row 3 show/hide) */
+          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
+          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
+          .kpi-row3[data-show="1"] { max-height:260px; opacity:1; }
+
           /* Collapse spacing from st_html iframes */
           div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
           div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
@@ -122,20 +141,6 @@ def inject_css():
             text-decoration:none; transition: all .2s ease;
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
-
-          /* Panels (Status/Snapshot) share KPI surface but keep original size */
-          .panel {
-            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
-            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
-            text-align: center;
-          }
-          .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-
-          /* Animated row for totals (row 3) — keep KPI sizing */
-          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
-          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
-          .kpi-row3[data-show="1"] { max-height:260px; opacity:1; }
-          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:18px; max-width:760px; margin:22px auto 0; } /* 22px = same row gap */
         </style>
         """,
         unsafe_allow_html=True,
@@ -171,7 +176,6 @@ def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: 
         return False
 
 def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
-    """Row must match the reduced ordered fields requested."""
     try:
         ws = get_ws()
         ws.append_row(row, value_input_option="USER_ENTERED")
@@ -264,7 +268,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — all logic integrated</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — unified KPI sizing</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -295,12 +299,11 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# INPUTS (3-per-row, robust clamping)
+# INPUTS (3-per-row)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
-    # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
         age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
@@ -320,7 +323,6 @@ with st.container():
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
-    # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
@@ -331,7 +333,6 @@ with st.container():
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(monthly_exp)}")
 
-    # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
     with r3c1:
         yearly_exp = monthly_exp * 12.0
@@ -356,22 +357,17 @@ F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exi
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # ---------- CORE CALCS ----------
-# Net real return during retirement
 F17 = (F9 - F7) / (1.0 + F7)
-# Annual expenses in the retirement year
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
-# REQUIRED CORPUS at retirement (INCLUDES inheritance goal as terminal value)
 F19 = PV(F17, (F6 - F4), -F18, -F14, 1)
-# Future value of current investments at retirement
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
-# Gap, SIP and Lumpsum
 F20 = F19 - FV_existing_at_ret
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
-F21_display = max(F21_raw, 0.0)  # never negative
-F22_display = max(F22_raw, 0.0)  # never negative
+F21_display = max(F21_raw, 0.0)
+F22_display = max(F22_raw, 0.0)
 
-# Inheritance-specific (as requested)
+# Inheritance-specific
 F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
 F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP
 F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum
@@ -380,16 +376,13 @@ coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
 
-# Totals (only shown if additional > 0)
 total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
 total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
 show_totals = (F25 > 1e-6) or (F26 > 1e-6)
-
-# Keep previous show state for animation
 prev_show = st.session_state.get("prev_show_totals", False)
 
 # =========================
-# KPI ROWS (aligned + animations)
+# KPI ROWS — ALL via HTML .kpi-grid (identical sizing)
 # =========================
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
@@ -401,73 +394,65 @@ if "prev_total_lumpsum" not in st.session_state: st.session_state.prev_total_lum
 if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
 if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
-# Row 1: Corpus | Monthly SIP | Lumpsum
-k1, k2, k3 = st.columns(3)
-with k1:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Required corpus at retirement</div>"
-        f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with k2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Monthly SIP needed</div>"
-        f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
-        f"<div class='sub'>Contributed at the start of each month</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with k3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Lumpsum needed today</div>"
-        f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
-        f"<div class='sub'>One-time investment</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
+# Row 1
+st.markdown(
+    f"""
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="label">Required corpus at retirement</div>
+        <div id="kpi1" class="value">{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>
+        <div class="sub">Covers expenses till life expectancy incl. inheritance</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Monthly SIP needed</div>
+        <div id="kpi2" class="value">{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>
+        <div class="sub">Contributed at the start of each month</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Lumpsum needed today</div>
+        <div id="kpi3" class="value">{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>
+        <div class="sub">One-time investment</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Equal row gap
-st.markdown("<div style='height:22px'></div>", unsafe_allow_html=True)
+# Row gap
+st.markdown("<div class='kpi-row-gap'></div>", unsafe_allow_html=True)
 
-# Row 2: Pick one | Additional SIP | Additional Lumpsum
-a1, a2, a3 = st.columns(3)
-with a1:
-    st.markdown(
-        "<div class='kpi'>"
-        "<div class='label'>Pick one</div>"
-        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
-        "<div class='sub'>&nbsp;</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-with a2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional SIP (for inheritance)</div>"
-        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>Extra monthly to fund legacy</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with a3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
-        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>As per your formula</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
+# Row 2
+st.markdown(
+    f"""
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="label">Pick one</div>
+        <div class="value">Monthly SIP OR Lumpsum Today</div>
+        <div class="sub">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Additional SIP (for inheritance)</div>
+        <div id="kpi4" class="value">{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>
+        <div class="sub">Extra monthly to fund legacy</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Additional Lumpsum (for inheritance)</div>
+        <div id="kpi5" class="value">{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>
+        <div class="sub">As per your formula</div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# Equal row gap (Row2 -> Row3)
-# Row 3 totals — HTML grid WRAPPED so we can animate; sizes match via .kpi class
+# Row gap (Row2 -> Row3) is built into .kpi-row3 via margin-top in grid
 initial_attr = "1" if prev_show else "0"
 target_attr  = "1" if show_totals else "0"
 
 st.markdown(
     f"""
     <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="margin-top:22px;">
         <div class="kpi" style="visibility:hidden">&nbsp;</div>
         <div class="kpi">
           <div class="label">Total Monthly SIP (incl. additional)</div>
@@ -494,16 +479,14 @@ st_html(
         if(!row) return;
         var target = "{'1' if show_totals else '0'}";
         row.setAttribute('data-show', row.getAttribute('data-show')); 
-        setTimeout(function(){{
-          row.setAttribute('data-show', target);
-        }}, 10);
+        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 10);
       }})();
     </script>
     """,
     height=0,
 )
 
-# Single COUNTUP block for all number animations
+# COUNTUP animations
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -538,11 +521,11 @@ st_html(
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
 
-        // KPI row 2 (additional)
+        // KPI row 2
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
 
-        // KPI row 3 (totals)
+        // KPI row 3
         run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
         run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
@@ -555,7 +538,7 @@ st_html(
     height=0,
 )
 
-# Save previous KPI values and show state
+# Save prev values + state
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
@@ -565,10 +548,8 @@ st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
 st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
 st.session_state.prev_show_totals = show_totals
 
-# Reduced space before Status/Snapshot
+# ===== Status & Snapshot =====
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-
-# Status of Retirement Goal & Snapshot (KPI surface, centered, same size feel)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
@@ -594,14 +575,11 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Update prev snapshot values
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# Reduced space before CTA
+# ===== CTA =====
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-
-# CTA: Save + Redirect (one click)
 st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
 save_clicked = st.button("Save & Open Ventura", type="primary", key="cta_submit", help="Save results to Google Sheets, then open Ventura in a new tab")
 st.markdown("</div>", unsafe_allow_html=True)
@@ -609,8 +587,6 @@ st.markdown("</div>", unsafe_allow_html=True)
 if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Reduced ordered fields you requested:
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -628,7 +604,6 @@ if save_clicked:
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
         st.success("Saved! Opening Ventura in a new tab…")
-        # open in new tab (works even with X-Frame-Options on target)
         st_html(
             """
             <script>
@@ -649,7 +624,7 @@ if save_clicked:
             unsafe_allow_html=True,
         )
 
-# Sticky Summary
+# ===== Sticky summary & captions =====
 st.markdown(
     f"""
     <div class='sticky-summary'>
@@ -662,8 +637,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-# Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — sizes locked + animated totals</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — unified KPI grids + spacing</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
