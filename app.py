@@ -262,6 +262,52 @@ if not st.session_state.signed_in:
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # --- Autofill sync so Streamlit reads browser-autofilled values ---
+st_html(
+    """
+    <script>
+      (function () {
+        // Runs in the frame; target the parent doc where the inputs live.
+        const doc = window.parent.document;
+
+        // Find Streamlit text/email/tel inputs and dispatch events when their value changes.
+        function tick() {
+          const nodes = doc.querySelectorAll(
+            'input[type="text"], input[type="email"], input[type="tel"]'
+          );
+          nodes.forEach((el) => {
+            // Only care about visible, enabled inputs
+            const style = window.getComputedStyle(el);
+            if (style.display === "none" || el.disabled) return;
+
+            const v = el.value || "";
+            if (v !== (el.dataset._lastVal || "")) {
+              el.dataset._lastVal = v;
+              // Nudge Streamlit/React
+              el.dispatchEvent(new Event("input",  { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+              el.dispatchEvent(new Event("blur",   { bubbles: true })); // extra nudge on some browsers
+            }
+          });
+        }
+
+        // Kick off a short poll window to catch autofill after page paint
+        let count = 0;
+        const id = setInterval(() => {
+          tick();
+          if (++count > 30) clearInterval(id); // ~6s @ 200ms
+        }, 200);
+
+        // Also run immediately and when page/tab visibility changes
+        tick();
+        doc.addEventListener("visibilitychange", tick, { passive: true });
+      })();
+    </script>
+    """,
+    height=0,
+)
+
+
     if submit:
         if not first_name or not last_name or not email or not phone:
             st.warning("Please fill First name, Last name, Email, and Phone.")
