@@ -32,177 +32,121 @@ def inject_css():
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
-            /* Light tokens (default) */
-            --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3; --chip: #eef2ff;
-            --accent: #2563EB; --accent-hover: #1E40AF; --warn: #fbbc04; --danger: #ff6b6b; --ok: #34d399;
+            --bg:#f7f8fc; --card:#ffffff; --card-2:#fbfcff; --text:#0e1321; --muted:#5d6473; --ring:#e7eaf3; --chip:#eef2ff;
+            --accent:#2563EB; --accent-hover:#1E40AF; --warn:#fbbc04; --danger:#ff6b6b; --ok:#34d399;
           }
           @media (prefers-color-scheme: dark) {
-            :root { --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
-                    --accent: #3B82F6; --accent-hover: #2563EB; }
+            :root { --bg:#0b0f1a; --card:#12182a; --card-2:#0e1424; --text:#e8edf5; --muted:#9aa4b2; --ring:#27304a; --chip:#1b2340;
+                    --accent:#3B82F6; --accent-hover:#2563EB; }
           }
 
-          html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:16px; line-height:1.6; }
-          .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
-          .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+          html, body, [class*="css"] { background:var(--bg); color:var(--text); font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-size:16px; line-height:1.6; }
+          .mono { font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+          .num  { font-family:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif; font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
 
           /* HERO */
-          .hero {
-            padding: 20px 18px; border: 1px solid var(--ring); border-radius: 14px;
-            background:
-              radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,0.12) 0%, transparent 50%),
-              radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,0.10) 0%, transparent 50%),
-              linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
-            max-width: 760px; margin: 0 auto; text-align: center; transition: all 0.25s ease;
-          }
-          .hero:hover { transform: scale(1.02); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
-          .hero .subtitle { color: var(--muted); margin-top: 6px; }
+          .hero{ padding:20px 18px; border:1px solid var(--ring); border-radius:14px;
+                 background: radial-gradient(1200px 600px at 12% -10%, rgba(110,231,183,.12) 0%, transparent 50%),
+                             radial-gradient(900px 500px at 95% 10%, rgba(138,180,248,.10) 0%, transparent 50%),
+                             linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)); max-width:760px; margin:0 auto; text-align:center; transition:.25s; }
+          .hero:hover{ transform:scale(1.02); box-shadow:0 4px 18px rgba(0,0,0,.08); }
+          .hero .title{ font-size:clamp(1.6rem,1.1vw + 1.1rem,2.0rem); font-weight:700; letter-spacing:.2px; }
+          .hero .subtitle{ color:var(--muted); margin-top:6px; }
 
-          /* Cards (original sizing) */
-          .card {
-            background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
-            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
-          }
-          .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
+          /* Cards */
+          .card{ background:var(--card); border:1px solid var(--ring); border-radius:12px; padding:14px 16px; width:100%; max-width:760px; margin:0 auto 10px; box-sizing:border-box; transition:.25s; }
+          .card:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
+          .card h3{ margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* KPI (canonical) */
-          .kpi {
-            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
-            min-height: 112px; box-sizing: border-box;
-          }
-          .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .kpi .label { color: var(--muted); font-size: .95rem; }
-          .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
-          .kpi .sub { color: var(--muted); font-size: .85rem; }
+          /* KPI */
+          .kpi{ background:var(--card-2); border:1px solid var(--ring); border-radius:12px; padding:14px; text-align:center; transition:.25s; min-height:112px; box-sizing:border-box; }
+          .kpi:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
+          .kpi .label{ color:var(--muted); font-size:.95rem; }
+          .kpi .value{ font-size:1.35rem; font-weight:700; margin-top:2px; }
+          .kpi .sub{ color:var(--muted); font-size:.85rem; }
 
-          /* Row-3 animation classes — applied to the SAME .kpi cards */
-          .kpi.row3 { transition: all .28s ease; }
-          .kpi.row3.hidden {
-            max-height:0; opacity:0; margin:0 !important;
-            padding-top:0 !important; padding-bottom:0 !important;
-            border-width:0 !important; min-height:0 !important; height:0 !important;
-            overflow:hidden;
-          }
-          .kpi.row3.show { opacity:1; transform: translateY(0); }
-          .kpi.row3.ghost { visibility:hidden; } /* keeps size when shown, collapses when switched to .hidden */
+          /* Row-3 animation */
+          .kpi.row3{ transition:all .28s ease; }
+          .kpi.row3.hidden{ max-height:0; opacity:0; margin:0!important; padding-top:0!important; padding-bottom:0!important; border-width:0!important; min-height:0!important; height:0!important; overflow:hidden; }
+          .kpi.row3.show{ opacity:1; transform:translateY(0); }
+          .kpi.row3.ghost{ visibility:hidden; }
 
           /* Snapshot metric */
-          .snap-metric { margin: 6px 0 10px; }
-          .snap-metric .label { color: var(--muted); font-size:.92rem; }
-          .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
+          .snap-metric{ margin:6px 0 10px; }
+          .snap-metric .label{ color:var(--muted); font-size:.92rem; }
+          .snap-metric .value{ font-size:1.2rem; font-weight:700; margin-top:2px; }
 
-          .badge { padding: 3px 8px; border-radius: 9999px; font-weight: 700; font-size:.78rem; border:1px solid var(--ring); }
-          .badge.ok { background: rgba(52,211,153,.12); color: var(--ok); }
-          .badge.warn { background: rgba(251,188,4,.12); color: var(--warn); }
-          .badge.bad { background: rgba(255,107,107,.12); color: var(--danger); }
+          .badge{ padding:3px 8px; border-radius:9999px; font-weight:700; font-size:.78rem; border:1px solid var(--ring); }
+          .badge.ok{ background:rgba(52,211,153,.12); color:var(--ok); }
+          .badge.warn{ background:rgba(251,188,4,.12); color:var(--warn); }
+          .badge.bad{ background:rgba(255,107,107,.12); color:var(--danger); }
 
           /* Inputs */
-          .stNumberInput, .stTextInput, .stTextArea { width: 100% !important; }
-          .stNumberInput input, .stTextInput input, textarea {
-            border:1px solid var(--ring) !important; border-radius: 10px !important; padding: 10px 12px !important; width: 100% !important; height: 44px !important; box-sizing: border-box; transition: all 0.25s ease;
-            font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif !important; font-weight: 500; letter-spacing: 0.2px;
+          .stNumberInput, .stTextInput, .stTextArea{ width:100%!important; }
+          .stNumberInput input, .stTextInput input, textarea{
+            border:1px solid var(--ring)!important; border-radius:10px!important; padding:10px 12px!important; width:100%!important; height:44px!important; box-sizing:border-box; transition:.25s;
+            font-family:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif!important; font-weight:500; letter-spacing:.2px;
           }
-          .stNumberInput input:hover, .stTextInput input:hover, textarea:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-          .stNumberInput input:focus, .stTextInput input:focus, textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.25) !important; }
+          .stNumberInput input:hover, .stTextInput input:hover, textarea:hover{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+          .stNumberInput input:focus, .stTextInput input:focus, textarea:focus{ border-color:var(--accent)!important; box-shadow:0 0 0 3px rgba(37,99,235,.25)!important; }
 
           /* Sticky summary bar */
-          .sticky-summary {
-            position: sticky; bottom: 0; z-index: 100; background: var(--card-2); border-top:1px solid var(--ring); padding: 8px 12px; border-radius: 12px 12px 0 0; max-width: 760px; margin: 0 auto; transition: all 0.25s ease;
-          }
-          .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
-          @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
+          .sticky-summary{ position:sticky; bottom:0; z-index:100; background:var(--card-2); border-top:1px solid var(--ring); padding:8px 12px; border-radius:12px 12px 0 0; max-width:760px; margin:0 auto; transition:.25s; }
+          .summary-grid{ display:grid; gap:10px; grid-template-columns:repeat(3, minmax(0,1fr)); }
+          @media (max-width:900px){ .summary-grid{ grid-template-columns:1fr; } }
 
-          /* CTA (centered Streamlit button) */
-          div.cta-wrap { text-align: center; }
-          div.cta-wrap button[kind="primary"] {
-            margin: 12px auto 18px;
-            padding: 12px 24px;
-            font-size: 16px; font-weight: 600;
-            border: none; border-radius: 9999px;
-            background-color: var(--accent); color: #fff;
-            cursor: pointer; text-align: center; transition: all 0.25s ease;
-            display: inline-block;
-          }
-          div.cta-wrap button[kind="primary"]::before { content: ""; }
-          div.cta-wrap button[kind="primary"]:hover {
-            background-color: var(--accent-hover);
-            transform: scale(1.04);
-            filter: brightness(1.06);
-            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+          /* CTA */
+          div.cta-wrap{ text-align:center; }
+          div.cta-wrap button[kind="primary"]{ margin:12px auto 18px; padding:12px 24px; font-size:16px; font-weight:600; border:none; border-radius:9999px; background-color:var(--accent); color:#fff; cursor:pointer; text-align:center; transition:.25s; display:inline-block; }
+          div.cta-wrap button[kind="primary"]::before{ content:""; }
+          div.cta-wrap button[kind="primary"]:hover{ background-color:var(--accent-hover); transform:scale(1.04); filter:brightness(1.06); box-shadow:0 3px 12px rgba(0,0,0,.12); }
+
+          .section{ max-width:760px; margin:0 auto 10px; }
+
+          /* Old wrapper shape (iframe inside div[data-testid="stIFrame"]) – keep collapsed */
+          div[data-testid="stIFrame"]{ margin:0!important; padding:0!important; height:0!important; min-height:0!important; border:0!important; overflow:hidden!important; }
+          div[data-testid="stIFrame"] > iframe[title="st.iframe"]{ display:block!important; height:0!important; min-height:0!important; width:0!important; border:0!important; margin:0!important; padding:0!important; overflow:hidden!important; }
+          div[data-testid="stIFrame"] + div{ margin-top:0!important; }
+
+          /* Panels */
+          .panel{ background:var(--card); border:1px solid var(--ring); border-radius:12px; padding:14px 16px; width:100%; max-width:760px; margin:0 auto 10px; box-sizing:border-box; transition:.25s; text-align:center; }
+          .panel:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
+          .panel.kpi-surface{ background:var(--card-2); }
+
+          /* === NEW: Handle CURRENT DOM where iframe is a DIRECT CHILD of stElementContainer === */
+
+          /* Collapse the container that directly holds an st_html iframe */
+          div[data-testid="stElementContainer"]:has(> iframe.stIFrame){
+            margin:0!important;
+            padding:0!important;
+            height:0!important;
+            min-height:0!important;
+            line-height:0!important;
           }
 
-          /* Section width limiter */
-          .section { max-width: 760px; margin: 0 auto 10px; }
+          /* Make sure the iframe itself contributes no layout */
+          iframe.stIFrame{
+            display:block!important;
+            height:0!important;
+            min-height:0!important;
+            width:0!important;
+            border:0!important;
+            margin:0!important;
+            padding:0!important;
+            overflow:hidden!important;
+            position:absolute!important;   /* keep it off the flow, scripts still run */
+            left:-10000px!important;
+            top:auto!important;
+          }
 
-          /* (Existing) baseline collapse for st_html iframes */
-          div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
-          div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
-            height:0 !important; min-height:0 !important; border:0 !important; display:block !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
+          /* Remove any extra top margin on the next element after the iframe container */
+          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{
+            margin-top:0!important;
           }
-          div[data-testid="stIFrame"] + div{ margin-top:0 !important; }
 
-          /* Link-style CTA after save */
-          .start-btn {
-            display:inline-block; margin:12px auto 18px; padding:12px 24px;
-            background: var(--accent); color: #fff; border-radius:9999px; font-weight:600;
-            text-decoration:none; transition: all .2s ease;
-          }
-          .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
-
-          /* Panel (unchanged size; KPI surface variant) */
-          .panel {
-            background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
-            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
-            text-align: center;
-          }
-          .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
-          .panel.kpi-surface { background: var(--card-2); }
-
-          /* ===== FINAL: nuke any extra gap from hidden st_html iframes ===== */
-          /* Remove margin/padding/height on the element container that wraps st_html's iframe */
-          div[data-testid="stElementContainer"]:has(> div[data-testid="stIFrame"]) {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            line-height: 0 !important;
-          }
-          /* Also catch the generic .element-container class Streamlit adds */
-          .element-container:has(> div[data-testid="stIFrame"]) {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            line-height: 0 !important;
-          }
-          /* Ensure the iframe wrapper itself contributes no space */
-          div[data-testid="stIFrame"] {
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            line-height: 0 !important;
-            overflow: hidden !important;
-          }
-          /* The actual iframe node */
-          div[data-testid="stIFrame"] > iframe[title="st.iframe"] {
-            display: block !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            width: 0 !important;      /* prevent stray inline layout */
-            border: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-          }
-          /* Prevent extra top gap on whatever follows the iframe container */
-          div[data-testid="stElementContainer"]:has(> div[data-testid="stIFrame"]) + div[data-testid="stElementContainer"] {
-            margin-top: 0 !important;
-          }
-          /* Some themes add bottom margin via data-stale — kill it for these nodes */
-          div[data-testid="stElementContainer"][data-stale="false"]:has(> div[data-testid="stIFrame"]) {
-            margin-bottom: 0 !important;
+          /* Also catch the generic .element-container class Streamlit sometimes uses */
+          .element-container:has(> iframe.stIFrame){
+            margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important;
           }
         </style>
         """,
