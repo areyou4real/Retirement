@@ -135,7 +135,7 @@ def inject_css():
           /* Section width limiter */
           .section { max-width: 760px; margin: 0 auto 10px; }
 
-          /* Collapse spacing from Streamlit HTML iframes (used by st_html / CountUp) */
+          /* (Existing) baseline collapse for st_html iframes */
           div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
           div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
             height:0 !important; min-height:0 !important; border:0 !important; display:block !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
@@ -159,10 +159,56 @@ def inject_css():
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .panel.kpi-surface { background: var(--card-2); }
 
+          /* ===== FINAL: nuke any extra gap from hidden st_html iframes ===== */
+          /* Remove margin/padding/height on the element container that wraps st_html's iframe */
+          div[data-testid="stElementContainer"]:has(> div[data-testid="stIFrame"]) {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            line-height: 0 !important;
+          }
+          /* Also catch the generic .element-container class Streamlit adds */
+          .element-container:has(> div[data-testid="stIFrame"]) {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            line-height: 0 !important;
+          }
+          /* Ensure the iframe wrapper itself contributes no space */
+          div[data-testid="stIFrame"] {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            line-height: 0 !important;
+            overflow: hidden !important;
+          }
+          /* The actual iframe node */
+          div[data-testid="stIFrame"] > iframe[title="st.iframe"] {
+            display: block !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            width: 0 !important;      /* prevent stray inline layout */
+            border: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+          }
+          /* Prevent extra top gap on whatever follows the iframe container */
+          div[data-testid="stElementContainer"]:has(> div[data-testid="stIFrame"]) + div[data-testid="stElementContainer"] {
+            margin-top: 0 !important;
+          }
+          /* Some themes add bottom margin via data-stale — kill it for these nodes */
+          div[data-testid="stElementContainer"][data-stale="false"]:has(> div[data-testid="stIFrame"]) {
+            margin-bottom: 0 !important;
+          }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 inject_css()
 
