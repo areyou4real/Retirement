@@ -376,22 +376,38 @@ ret_post_pct = 6.0
 F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exist_pct/100.0
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
-# CALCS
+# =========================
+# CALCS (updated per new requirement)
+# =========================
+# Annual expenses at retirement start (unchanged)
 F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
-F19 = PV(F17, (F6 - F4), -F18, -F14, 1)  # Required corpus at retirement (incl. inheritance as terminal)
+
+# Base required corpus at retirement EXCLUDING inheritance
+# (previously you had -F14 as fv; now we set fv=0 so inheritance doesn't affect base)
+F19_base = PV(F17, (F6 - F4), -F18, 0.0, 1)
+
+# Existing investments FV at retirement (unchanged)
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
-F20 = F19 - FV_existing_at_ret
-F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
-F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
+
+# Base gap (used for Monthly SIP & Lumpsum today)
+F20_base = F19_base - FV_existing_at_ret
+
+# Monthly SIP & Lumpsum (based ONLY on base gap)
+F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20_base, 1)
+F22_raw = PV(F8, (F4 - F3), 0.0, -F20_base, 1)
 F21_display = max(F21_raw, 0.0)  # never negative
 F22_display = max(F22_raw, 0.0)  # never negative
 
-# Inheritance-specific
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
+# Inheritance-specific (background) — per your Excel formulas
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)  # corpus needed at retirement to fund inheritance
 F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
 F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
 
+# Displayed required corpus = base + (inheritance corpus if non-zero)
+F19 = F19_base + (F24 if F14 > 0 else 0.0)
+
+# Coverage relative to displayed requirement (so it reflects total including inheritance)
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
@@ -422,7 +438,7 @@ with k1:
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
+        f"<div class='sub'>Base need {'+ inheritance' if F14>0 else ''}</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k2:
@@ -430,7 +446,7 @@ with k2:
         f"<div class='kpi'>"
         f"<div class='label'>Monthly SIP needed</div>"
         f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
-        f"<div class='sub'>Contributed at the start of each month</div>"
+        f"<div class='sub'>Excludes inheritance; start of month</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k3:
@@ -438,7 +454,7 @@ with k3:
         f"<div class='kpi'>"
         f"<div class='label'>Lumpsum needed today</div>"
         f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
-        f"<div class='sub'>One-time investment</div>"
+        f"<div class='sub'>Excludes inheritance; one-time</div>"
         f"</div>", unsafe_allow_html=True,
     )
 
@@ -461,7 +477,7 @@ with a2:
         f"<div class='kpi'>"
         f"<div class='label'>Additional SIP</div>"
         f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>For Inheritance</div>"
+        f"<div class='sub'>For inheritance only</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with a3:
@@ -469,11 +485,11 @@ with a3:
         f"<div class='kpi'>"
         f"<div class='label'>Additional Lumpsum</div>"
         f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>For Inheritance</div>"
+        f"<div class='sub'>For inheritance only</div>"
         f"</div>", unsafe_allow_html=True,
     )
 
-# >>> NEW: same gap between row 2 and row 3 as between row 1 and row 2
+# Same gap before row 3
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # Row 3 (totals) — uses SAME st.columns + .kpi cards; JS toggles classes for animation
@@ -589,7 +605,7 @@ st_html(
 
         // Snapshot
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
-        run('snap2', {int(max(F20, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
+        run('snap2', {int(max(F20_base, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
     </script>
     """,
@@ -613,7 +629,7 @@ st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
-    st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
+    st.caption("Portion of the (base + inheritance if any) corpus covered by your investments grown to retirement")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -625,14 +641,14 @@ with cB:
         f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div></div>",
         unsafe_allow_html=True,
     )
-    gap = max(F20, 0.0)
+    gap = max(F20_base, 0.0)  # base gap (aligns with base SIP/Lumpsum)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Gap to fund</div>"
         f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div></div>",
         unsafe_allow_html=True,
     )
-    if F20 < 0:
-        st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
+    if F20_base < 0:
+        st.caption("You have a **surplus** for the base goal; SIP/Lumpsum may be 0. Inheritance is handled as additional.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Update prev snapshot values
@@ -651,6 +667,7 @@ if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
+    # Write the reduced set of fields you wanted (with updated semantics)
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -660,10 +677,14 @@ if save_clicked:
         int(F3), int(F4), int(F6),
         float(infl_pct), 12.0,
         float(F11), float(F12), float(F13), float(F14),
-        float(F19), float(FV_existing_at_ret), float(max(F20, 0.0)),
-        float(max(F21_display, 0.0)), float(max(F22_display, 0.0)),
-        float(max(F25, 0.0)), float(max(F26, 0.0)),
-        float(round(coverage * 100.0, 1)),
+        float(F19),                         # Required corpus at retirement (displayed: base + F24 if any)
+        float(FV_existing_at_ret),          # Existing corpus at retirement (FV)
+        float(max(F20_base, 0.0)),          # Gap to fund (base only, aligns with base SIP/Lumpsum)
+        float(max(F21_display, 0.0)),       # Monthly SIP needed (base)
+        float(max(F22_display, 0.0)),       # Lumpsum needed today (base)
+        float(max(F25, 0.0)),               # Additional SIP (inheritance)
+        float(max(F26, 0.0)),               # Additional Lumpsum (inheritance)
+        float(round(coverage * 100.0, 1)),  # Coverage against displayed corpus
     ]
     ok = append_final_snapshot_to_gsheet_minimal(row)
     if ok:
@@ -705,4 +726,4 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — Inheritance excluded from base SIP/Lumpsum; added to displayed corpus only</div>", unsafe_allow_html=True)
