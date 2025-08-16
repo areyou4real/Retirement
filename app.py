@@ -343,9 +343,9 @@ with st.container():
     # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
-        infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
+        infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=1.0)
     with r2c2:
-        st.number_input("Return on existing investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
+        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
         ret_exist_pct = 12.0
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
@@ -358,7 +358,7 @@ with st.container():
         st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
         st.caption(f"≈ {number_to_words_short(yearly_exp)}")
     with r3c2:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, max_value=1_000_000_000.0, value=1_000_000.0, step=10_000.0, format="%.0f")
+        current_invest = st.number_input("Current investments (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(current_invest)}")
     with r3c3:
         legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
@@ -449,7 +449,7 @@ with a1:
     st.markdown(
         "<div class='kpi'>"
         "<div class='label'>Pick one</div>"
-        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
+        "<div class='value'>Monthly SIP / Lumpsum Today</div>"
         "<div class='sub'>&nbsp;</div>"
         "</div>",
         unsafe_allow_html=True,
@@ -457,17 +457,17 @@ with a1:
 with a2:
     st.markdown(
         f"<div class='kpi'>"
-        f"<div class='label'>Additional SIP (for inheritance)</div>"
+        f"<div class='label'>Additional SIP</div>"
         f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>Extra monthly to fund legacy</div>"
+        f"<div class='sub'>For Inheritance</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with a3:
     st.markdown(
         f"<div class='kpi'>"
-        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
+        f"<div class='label'>Additional Lumpsum</div>"
         f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>As per your formula</div>"
+        f"<div class='sub'>For Inheritance</div>"
         f"</div>", unsafe_allow_html=True,
     )
 
@@ -483,7 +483,7 @@ with c1:
         f"<div id='row3card1' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
         f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
         f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
-        f"<div class='sub'>Base SIP + additional for legacy</div>"
+        f"<div class='sub'>Base SIP + additional</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -492,7 +492,7 @@ with c2:
         f"<div id='row3card2' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
         f"<div class='label'>Total Lumpsum (incl. additional)</div>"
         f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
-        f"<div class='sub'>Base lumpsum + additional for legacy</div>"
+        f"<div class='sub'>Base lumpsum + additional</div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -699,6 +699,7 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
+
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
