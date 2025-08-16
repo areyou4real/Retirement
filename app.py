@@ -32,20 +32,17 @@ def inject_css():
           @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
           :root {
-            --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3;
+            /* Light tokens (default) */
+            --bg: #f7f8fc; --card: #ffffff; --card-2: #fbfcff; --text: #0e1321; --muted: #5d6473; --ring: #e7eaf3; --chip: #eef2ff;
             --accent: #2563EB; --accent-hover: #1E40AF; --warn: #fbbc04; --danger: #ff6b6b; --ok: #34d399;
           }
           @media (prefers-color-scheme: dark) {
-            :root { --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a;
+            :root { --bg: #0b0f1a; --card: #12182a; --card-2: #0e1424; --text: #e8edf5; --muted: #9aa4b2; --ring: #27304a; --chip: #1b2340;
                     --accent: #3B82F6; --accent-hover: #2563EB; }
           }
 
-          html, body, [class*="css"] {
-            background: var(--bg); color: var(--text);
-            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            font-size:16px; line-height:1.6;
-          }
-          .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+          html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-size:16px; line-height:1.6; }
+          .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
           .num  { font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
           /* HERO */
@@ -61,7 +58,7 @@ def inject_css():
           .hero .title { font-size: clamp(1.6rem, 1.1vw + 1.1rem, 2.0rem); font-weight: 700; letter-spacing:.2px; }
           .hero .subtitle { color: var(--muted); margin-top: 6px; }
 
-          /* Content cards */
+          /* Cards (original sizing) */
           .card {
             background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
             width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
@@ -69,29 +66,29 @@ def inject_css():
           .card:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .card h3 { margin:0 0 8px 0; font-weight:600; font-size:22px; letter-spacing:.2px; text-align:center; }
 
-          /* KPI grid (used for ALL KPI rows to keep identical sizing) */
-          .kpi-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:18px; max-width:760px; margin:0 auto; }
-
-          /* KPI card — identical everywhere */
+          /* KPI (canonical) */
           .kpi {
-            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center;
-            transition: all 0.25s ease; min-height: 118px; display:flex; flex-direction:column; justify-content:center;
+            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px; text-align:center; transition: all 0.25s ease;
+            min-height: 112px; box-sizing: border-box;
           }
           .kpi:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .kpi .label { color: var(--muted); font-size: .95rem; }
           .kpi .value { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
           .kpi .sub { color: var(--muted); font-size: .85rem; }
 
-          /* Panels (Status/Snapshot) use KPI surface but keep original sizing */
-          .panel {
-            background: var(--card-2); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
-            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
-            text-align: center;
+          /* Row-3 animation classes — applied to the SAME .kpi cards */
+          .kpi.row3 { transition: all .28s ease; }
+          .kpi.row3.hidden {
+            max-height:0; opacity:0; margin:0 !important;
+            padding-top:0 !important; padding-bottom:0 !important;
+            border-width:0 !important; min-height:0 !important; height:0 !important;
+            overflow:hidden;
           }
-          .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+          .kpi.row3.show { opacity:1; transform: translateY(0); }
+          .kpi.row3.ghost { visibility:hidden; } /* keeps size when shown, collapses when switched to .hidden */
 
           /* Snapshot metric */
-          .snap-metric { margin: 6px 0 10px; text-align:center; }
+          .snap-metric { margin: 6px 0 10px; }
           .snap-metric .label { color: var(--muted); font-size:.92rem; }
           .snap-metric .value { font-size: 1.2rem; font-weight: 700; margin-top: 2px; }
 
@@ -116,18 +113,28 @@ def inject_css():
           .summary-grid { display:grid; gap:10px; grid-template-columns: repeat(3, minmax(0,1fr)); }
           @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
 
+          /* CTA (centered Streamlit button) */
+          div.cta-wrap { text-align: center; }
+          div.cta-wrap button[kind="primary"] {
+            margin: 12px auto 18px;
+            padding: 12px 24px;
+            font-size: 16px; font-weight: 600;
+            border: none; border-radius: 9999px;
+            background-color: var(--accent); color: #fff;
+            cursor: pointer; text-align: center; transition: all 0.25s ease;
+            display: inline-block;
+          }
+          div.cta-wrap button[kind="primary"]:hover {
+            background-color: var(--accent-hover);
+            transform: scale(1.04);
+            filter: brightness(1.06);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+          }
+
           /* Section width limiter */
           .section { max-width: 760px; margin: 0 auto 10px; }
 
-          /* Row gaps between KPI grids (same space between row1→row2 and row2→row3) */
-          .kpi-row-gap { height:22px; }
-
-          /* Animated row (row 3 show/hide) */
-          .kpi-row3 { transition: all .28s ease; overflow:hidden; }
-          .kpi-row3[data-show="0"] { max-height:0; opacity:0; margin:0 !important; padding-top:0 !important; padding-bottom:0 !important; }
-          .kpi-row3[data-show="1"] { max-height:260px; opacity:1; }
-
-          /* Collapse spacing from st_html iframes */
+          /* Collapse spacing from Streamlit HTML iframes (used by st_html / CountUp) */
           div[data-testid="stIFrame"]{ margin:0 !important; padding:0 !important; }
           div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
             height:0 !important; min-height:0 !important; border:0 !important; display:block !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
@@ -141,6 +148,15 @@ def inject_css():
             text-decoration:none; transition: all .2s ease;
           }
           .start-btn:hover { background: var(--accent-hover); transform: scale(1.04); box-shadow: 0 3px 12px rgba(0,0,0,.12); }
+
+          /* Panel (unchanged size; KPI surface variant) */
+          .panel {
+            background: var(--card); border:1px solid var(--ring); border-radius: 12px; padding: 14px 16px;
+            width: 100%; max-width: 760px; margin: 0 auto 10px; box-sizing: border-box; transition: all 0.25s ease;
+            text-align: center;
+          }
+          .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+          .panel.kpi-surface { background: var(--card-2); }
         </style>
         """,
         unsafe_allow_html=True,
@@ -268,7 +284,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — unified KPI sizing</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -299,11 +315,12 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# INPUTS (3-per-row)
+# INPUTS (3-per-row, robust clamping)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
+    # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
         age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
@@ -318,11 +335,12 @@ with st.container():
         hard_max_life = 110
         max_life_exp = max(min_life_exp, hard_max_life)
         default_life = min(max(90, min_life_exp), max_life_exp)
-        life_expectancy = st.number_input("Life expectancy", min_value=min_life_exp, max_value=max_life_exp, value=default_life, step=1)
+        life_expectancy = st.number_input("Life expectancy", min_value=max(0, min_life_exp), max_value=max_life_exp, value=default_life, step=1)
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
+    # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Expense inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=0.1, format="%.1f")
@@ -333,6 +351,7 @@ with st.container():
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(monthly_exp)}")
 
+    # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
     with r3c1:
         yearly_exp = monthly_exp * 12.0
@@ -356,33 +375,34 @@ ret_post_pct = 6.0
 F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exist_pct/100.0
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
-# ---------- CORE CALCS ----------
-F17 = (F9 - F7) / (1.0 + F7)
-F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
-F19 = PV(F17, (F6 - F4), -F18, -F14, 1)
+# CALCS
+F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
+F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
+F19 = PV(F17, (F6 - F4), -F18, -F14, 1)  # Required corpus at retirement (incl. inheritance as terminal)
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
 F20 = F19 - FV_existing_at_ret
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20, 1)
-F21_display = max(F21_raw, 0.0)
-F22_display = max(F22_raw, 0.0)
+F21_display = max(F21_raw, 0.0)  # never negative
+F22_display = max(F22_raw, 0.0)  # never negative
 
 # Inheritance-specific
 F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
 
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
 
+# Totals (only shown if additional > 0)
 total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
 total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
 show_totals = (F25 > 1e-6) or (F26 > 1e-6)
 prev_show = st.session_state.get("prev_show_totals", False)
 
 # =========================
-# KPI ROWS — ALL via HTML .kpi-grid (identical sizing)
+# KPI ROWS (aligned + animations)
 # =========================
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
@@ -395,98 +415,132 @@ if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
 if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
 # Row 1
-st.markdown(
-    f"""
-    <div class="kpi-grid">
-      <div class="kpi">
-        <div class="label">Required corpus at retirement</div>
-        <div id="kpi1" class="value">{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>
-        <div class="sub">Covers expenses till life expectancy incl. inheritance</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Monthly SIP needed</div>
-        <div id="kpi2" class="value">{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>
-        <div class="sub">Contributed at the start of each month</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Lumpsum needed today</div>
-        <div id="kpi3" class="value">{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>
-        <div class="sub">One-time investment</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+k1, k2, k3 = st.columns(3)
+with k1:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Required corpus at retirement</div>"
+        f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
+        f"<div class='sub'>Covers expenses till life expectancy incl. inheritance</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with k2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Monthly SIP needed</div>"
+        f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
+        f"<div class='sub'>Contributed at the start of each month</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with k3:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Lumpsum needed today</div>"
+        f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
+        f"<div class='sub'>One-time investment</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
 
-# Row gap
-st.markdown("<div class='kpi-row-gap'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # Row 2
-st.markdown(
-    f"""
-    <div class="kpi-grid">
-      <div class="kpi">
-        <div class="label">Pick one</div>
-        <div class="value">Monthly SIP OR Lumpsum Today</div>
-        <div class="sub">&nbsp;</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Additional SIP (for inheritance)</div>
-        <div id="kpi4" class="value">{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>
-        <div class="sub">Extra monthly to fund legacy</div>
-      </div>
-      <div class="kpi">
-        <div class="label">Additional Lumpsum (for inheritance)</div>
-        <div id="kpi5" class="value">{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>
-        <div class="sub">As per your formula</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+a1, a2, a3 = st.columns(3)
+with a1:
+    st.markdown(
+        "<div class='kpi'>"
+        "<div class='label'>Pick one</div>"
+        "<div class='value'>Monthly SIP OR Lumpsum Today</div>"
+        "<div class='sub'>&nbsp;</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+with a2:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional SIP (for inheritance)</div>"
+        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
+        f"<div class='sub'>Extra monthly to fund legacy</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
+with a3:
+    st.markdown(
+        f"<div class='kpi'>"
+        f"<div class='label'>Additional Lumpsum (for inheritance)</div>"
+        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
+        f"<div class='sub'>As per your formula</div>"
+        f"</div>", unsafe_allow_html=True,
+    )
 
-# Row gap (Row2 -> Row3) is built into .kpi-row3 via margin-top in grid
-initial_attr = "1" if prev_show else "0"
-target_attr  = "1" if show_totals else "0"
+# Row 3 (totals) — uses SAME st.columns + .kpi cards; JS toggles classes for animation
+c0, c1, c2 = st.columns(3)
+with c0:
+    st.markdown(
+        f"<div id='row3card0' class='kpi row3 {'ghost' if show_totals else 'hidden'}'>&nbsp;</div>",
+        unsafe_allow_html=True,
+    )
+with c1:
+    st.markdown(
+        f"<div id='row3card1' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
+        f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
+        f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
+        f"<div class='sub'>Base SIP + additional for legacy</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+with c2:
+    st.markdown(
+        f"<div id='row3card2' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
+        f"<div class='label'>Total Lumpsum (incl. additional)</div>"
+        f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
+        f"<div class='sub'>Base lumpsum + additional for legacy</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
-st.markdown(
-    f"""
-    <div id="kpi-row3" class="kpi-row3" data-show="{initial_attr}">
-      <div class="kpi-grid" style="margin-top:22px;">
-        <div class="kpi" style="visibility:hidden">&nbsp;</div>
-        <div class="kpi">
-          <div class="label">Total Monthly SIP (incl. additional)</div>
-          <div id="kpi6" class="value">{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>
-          <div class="sub">Base SIP + additional for legacy</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Total Lumpsum (incl. additional)</div>
-          <div id="kpi7" class="value">{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>
-          <div class="sub">Base lumpsum + additional for legacy</div>
-        </div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Toggle attribute AFTER render to animate appear/disappear
+# JS toggler so appear/disappear animates smoothly even across reruns
 st_html(
     f"""
     <script>
       (function(){{
-        var row = window.parent.document.getElementById('kpi-row3');
-        if(!row) return;
-        var target = "{'1' if show_totals else '0'}";
-        row.setAttribute('data-show', row.getAttribute('data-show')); 
-        setTimeout(function(){{ row.setAttribute('data-show', target); }}, 10);
+        var wantOpen = {"true" if show_totals else "false"};
+        var prevOpen = {"true" if prev_show else "false"};
+        var p  = window.parent.document.getElementById('row3card0');
+        var c1 = window.parent.document.getElementById('row3card1');
+        var c2 = window.parent.document.getElementById('row3card2');
+        if(!p || !c1 || !c2) return;
+
+        function toHidden(el) {{
+          el.classList.remove('show','ghost');
+          el.classList.add('hidden');
+        }}
+        function toShow(el) {{
+          el.classList.remove('hidden');
+          // force reflow so transition fires
+          void el.offsetHeight;
+          el.classList.add('show');
+        }}
+        function toGhost(el) {{
+          el.classList.remove('hidden');
+          void el.offsetHeight;
+          el.classList.add('ghost');
+        }}
+
+        if (wantOpen) {{
+          toGhost(p);    // blank left card keeps exact size
+          toShow(c1);
+          toShow(c2);
+        }} else {{
+          toHidden(c1);
+          toHidden(c2);
+          toHidden(p);   // collapse whole row
+        }}
       }})();
     </script>
     """,
     height=0,
 )
 
-# COUNTUP animations
+# CountUp animations
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -521,11 +575,11 @@ st_html(
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
 
-        // KPI row 2
+        // KPI row 2 (additional)
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
 
-        // KPI row 3
+        // KPI row 3 (totals)
         run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
         run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
@@ -538,7 +592,7 @@ st_html(
     height=0,
 )
 
-# Save prev values + state
+# Save previous KPI values + show state
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
@@ -548,18 +602,20 @@ st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
 st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
 st.session_state.prev_show_totals = show_totals
 
-# ===== Status & Snapshot =====
+# Reduced space before Status/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+
+# Status of Retirement Goal & Snapshot
 cA, cB = st.columns([1.2, 1])
 with cA:
-    st.markdown("<div class='panel'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
     st.caption("Portion of the required corpus (incl. inheritance) already covered by your investments grown to retirement")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with cB:
-    st.markdown("<div class='panel'><h3>Snapshot</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='panel kpi-surface'><h3>Snapshot</h3>", unsafe_allow_html=True)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Existing corpus at retirement (future value)</div>"
         f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div></div>",
@@ -575,18 +631,22 @@ with cB:
         st.caption("You have a **surplus** based on current settings. SIP/Lumpsum may be 0.")
     st.markdown("</div>", unsafe_allow_html=True)
 
+# Update prev snapshot values
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# ===== CTA =====
+# Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
-save_clicked = st.button("Save & Open Ventura", type="primary", key="cta_submit", help="Save results to Google Sheets, then open Ventura in a new tab")
+
+# CTA: Save + Redirect (one click)
+st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
+save_clicked = st.button("Save & Open Ventura", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
 
 if save_clicked:
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+
     row = [
         now_ist,
         st.session_state.get("user_first_name", ""),
@@ -615,7 +675,7 @@ if save_clicked:
         )
         st.markdown(
             """
-            <div style='text-align:center;'>
+            <div class='cta-wrap'>
               <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
                 Open Ventura
               </a>
@@ -624,7 +684,7 @@ if save_clicked:
             unsafe_allow_html=True,
         )
 
-# ===== Sticky summary & captions =====
+# Sticky Summary
 st.markdown(
     f"""
     <div class='sticky-summary'>
@@ -637,6 +697,8 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — unified KPI grids + spacing</div>", unsafe_allow_html=True)
+
+# Version label + fixed-rate captions at the bottom
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
