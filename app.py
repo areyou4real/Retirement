@@ -158,6 +158,44 @@ def inject_css():
           }
           .panel:hover { transform: translateY(-4px); box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
           .panel.kpi-surface { background: var(--card-2); }
+
+                  /* Kill vertical gap around st.components.v1.html iframes (CountUp) */
+        /* 1) Nuke the wrapper container spacing */
+        div[data-testid="stElementContainer"]:has(> div[data-testid="stIFrame"]) {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* 2) Nuke the stIFrame div itself */
+        div[data-testid="stIFrame"]{
+          margin: 0 !important;
+          padding: 0 !important;
+          height: 0 !important;
+          line-height: 0 !important;
+        }
+
+        /* 3) And the actual iframe */
+        div[data-testid="stIFrame"] > iframe[title="st.iframe"]{
+          display: block !important;
+          height: 0 !important;
+          min-height: 0 !important;
+          border: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+
+        /* 4) Prevent any extra top margin on the next element after the iframe */
+        div[data-testid="stIFrame"] + * {
+          margin-top: 0 !important;
+        }
+
+        /* Fallback for browsers without :has() — slightly broader target */
+        .element-container.st-emotion-cache-1vo6xi6:has(> div[data-testid="stIFrame"]) {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
