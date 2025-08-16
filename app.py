@@ -124,6 +124,7 @@ def inject_css():
             cursor: pointer; text-align: center; transition: all 0.25s ease;
             display: inline-block;
           }
+          div.cta-wrap button[kind="primary"]::before { content: ""; }
           div.cta-wrap button[kind="primary"]:hover {
             background-color: var(--accent-hover);
             transform: scale(1.04);
@@ -441,6 +442,7 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
+# Gap between row 1 and row 2
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # Row 2
@@ -470,6 +472,9 @@ with a3:
         f"<div class='sub'>For Inheritance</div>"
         f"</div>", unsafe_allow_html=True,
     )
+
+# >>> NEW: same gap between row 2 and row 3 as between row 1 and row 2
+st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # Row 3 (totals) — uses SAME st.columns + .kpi cards; JS toggles classes for animation
 c0, c1, c2 = st.columns(3)
@@ -515,7 +520,6 @@ st_html(
         }}
         function toShow(el) {{
           el.classList.remove('hidden');
-          // force reflow so transition fires
           void el.offsetHeight;
           el.classList.add('show');
         }}
@@ -526,13 +530,13 @@ st_html(
         }}
 
         if (wantOpen) {{
-          toGhost(p);    // blank left card keeps exact size
+          toGhost(p);
           toShow(c1);
           toShow(c2);
         }} else {{
           toHidden(c1);
           toHidden(c2);
-          toHidden(p);   // collapse whole row
+          toHidden(p);
         }}
       }})();
     </script>
@@ -699,7 +703,6 @@ st.markdown(
 )
 
 # Version label + fixed-rate captions at the bottom
-
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
