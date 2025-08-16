@@ -6,6 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import pytz
+import time, hashlib  # <-- for anti-spam/idempotency
 
 # =========================
 # App Config
@@ -113,41 +114,16 @@ def inject_css():
           .panel:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
           .panel.kpi-surface{ background:var(--card-2); }
 
-          /* === NEW: Handle CURRENT DOM where iframe is a DIRECT CHILD of stElementContainer === */
-
-          /* Collapse the container that directly holds an st_html iframe */
+          /* === CURRENT DOM: iframe is a DIRECT CHILD of stElementContainer === */
           div[data-testid="stElementContainer"]:has(> iframe.stIFrame){
-            margin:0!important;
-            padding:0!important;
-            height:0!important;
-            min-height:0!important;
-            line-height:0!important;
-          }
-
-          /* Make sure the iframe itself contributes no layout */
-          iframe.stIFrame{
-            display:block!important;
-            height:0!important;
-            min-height:0!important;
-            width:0!important;
-            border:0!important;
-            margin:0!important;
-            padding:0!important;
-            overflow:hidden!important;
-            position:absolute!important;   /* keep it off the flow, scripts still run */
-            left:-10000px!important;
-            top:auto!important;
-          }
-
-          /* Remove any extra top margin on the next element after the iframe container */
-          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{
-            margin-top:0!important;
-          }
-
-          /* Also catch the generic .element-container class Streamlit sometimes uses */
-          .element-container:has(> iframe.stIFrame){
             margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important;
           }
+          iframe.stIFrame{
+            display:block!important; height:0!important; min-height:0!important; width:0!important; border:0!important; margin:0!important; padding:0!important; overflow:hidden!important;
+            position:absolute!important; left:-10000px!important; top:auto!important;
+          }
+          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{ margin-top:0!important; }
+          .element-container:has(> iframe.stIFrame){ margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -231,7 +207,7 @@ def number_to_words_short(n: float) -> str:
     return f"{absn:.0f}"
 
 # =========================
-# SIMPLE SIGN-IN GATE
+# SIMPLE SIGN-IN GATE (Autofill-aware)
 # =========================
 if "signed_in" not in st.session_state:
     st.session_state.signed_in = False
@@ -248,63 +224,48 @@ if not st.session_state.signed_in:
     with st.container():
         st.markdown("<div class='section'>", unsafe_allow_html=True)
         st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
+
         c1, c2 = st.columns(2)
         with c1:
-            first_name = st.text_input("First name")
+            first_name = st.text_input("First name", key="si_first_name")
         with c2:
-            last_name = st.text_input("Last name")
+            last_name = st.text_input("Last name", key="si_last_name")
+
         c3, c4 = st.columns(2)
         with c3:
-            email = st.text_input("Email address")
+            email = st.text_input("Email address", key="si_email")
         with c4:
-            phone = st.text_input("Phone number")
+            phone = st.text_input("Phone number", key="si_phone")
 
-        # --- Robust autofill sync (native value setter + focus/blur + short poll) ---
-        st.markdown(
+        # ---- Autofill sync: ensure browser/Google autofill is seen by Streamlit without pressing Enter
+        st_html(
             """
             <script>
-              (function () {
-                const doc = window.parent.document;
-
-                // Use the native value setter so React sees a real change.
-                const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-
-                function forceSync(el) {
-                  if (!el || el.disabled) return;
-                  const v = el.value ?? "";
-                  if (setter) setter.call(el, v);          // re-set current value
-                  el.dispatchEvent(new Event('input',  { bubbles: true }));
-                  el.dispatchEvent(new Event('change', { bubbles: true }));
-                  el.focus({ preventScroll: true });
-                  el.blur();
-                }
-
-                function syncAll() {
-                  // Streamlit text inputs end up as plain <input> elements
-                  const inputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
-                  inputs.forEach((el) => {
-                    // only bother if not empty (i.e., likely autofilled)
-                    if ((el.value ?? "").length) forceSync(el);
+              (function(){
+                // Fire synthetic 'input' events for any non-empty autofilled fields
+                function nudgeInputs(){
+                  const root = window.parent.document;
+                  const sel = 'input[type="text"],input[type="email"],input[type="tel"],input:not([type])';
+                  const nodes = root.querySelectorAll(sel);
+                  nodes.forEach((el)=>{
+                    if (el && el.value && el.value.length){
+                      el.dispatchEvent(new Event('input', {bubbles:true}));
+                      el.dispatchEvent(new Event('change', {bubbles:true}));
+                    }
                   });
                 }
-
                 // Run a few times to catch late autofill
-                let ticks = 0;
-                const id = setInterval(() => {
-                  syncAll();
-                  if (++ticks > 30) clearInterval(id); // ~6s total (30 * 200ms)
-                }, 200);
-
-                // Also try on visibility change & pageshow
-                doc.addEventListener('visibilitychange', syncAll, { passive: true });
-                window.addEventListener('pageshow', syncAll, { passive: true });
-
-                // One immediate pass
-                syncAll();
+                nudgeInputs();
+                let t=0, id=setInterval(()=>{ nudgeInputs(); if(++t>8) clearInterval(id); }, 250);
+                document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) nudgeInputs(); });
+                window.addEventListener('pageshow', nudgeInputs);
+                window.addEventListener('focus', nudgeInputs, true);
+                // Also on blur of any field
+                window.addEventListener('blur', (e)=>{ if(e && e.target && e.target.tagName==='INPUT') nudgeInputs(); }, true);
               })();
             </script>
             """,
-            unsafe_allow_html=True,
+            height=0,
         )
 
         submit = st.button("Sign in & continue", type="primary")
@@ -312,22 +273,27 @@ if not st.session_state.signed_in:
         st.markdown("</div>", unsafe_allow_html=True)
 
     if submit:
+        # Pull the latest values from session_state (populated by JS-triggered input events)
+        first_name = st.session_state.get("si_first_name", "").strip()
+        last_name  = st.session_state.get("si_last_name", "").strip()
+        email      = st.session_state.get("si_email", "").strip()
+        phone      = st.session_state.get("si_phone", "").strip()
+
         if not first_name or not last_name or not email or not phone:
             st.warning("Please fill First name, Last name, Email, and Phone.")
         else:
             ok = append_signin_to_gsheet(first_name, last_name, email, phone)
             if ok:
                 st.session_state.signed_in = True
-                st.session_state.user_first_name = first_name.strip()
-                st.session_state.user_last_name = last_name.strip()
-                st.session_state.user_email = email.strip()
-                st.session_state.user_phone = phone.strip()
+                st.session_state.user_first_name = first_name
+                st.session_state.user_last_name  = last_name
+                st.session_state.user_email      = email
+                st.session_state.user_phone      = phone
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — Autofill-friendly sign-in + row3 sizing/animations</div>", unsafe_allow_html=True)
     st.stop()
-
 
 # =====================================================================
 # CALCULATOR PAGE
@@ -418,37 +384,35 @@ F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exi
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # =========================
-# CALCS (updated per new requirement)
+# CALCS (inheritance excluded from base SIP/Lumpsum)
 # =========================
-# Annual expenses at retirement start (unchanged)
 F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
 
-# Base required corpus at retirement EXCLUDING inheritance
-# (previously you had -F14 as fv; now we set fv=0 so inheritance doesn't affect base)
+# Base corpus (excluding inheritance)
 F19_base = PV(F17, (F6 - F4), -F18, 0.0, 1)
 
-# Existing investments FV at retirement (unchanged)
+# FV of existing investments by retirement
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
 
-# Base gap (used for Monthly SIP & Lumpsum today)
+# Base gap -> drives base SIP/Lumpsum
 F20_base = F19_base - FV_existing_at_ret
 
-# Monthly SIP & Lumpsum (based ONLY on base gap)
+# Base SIP/Lumpsum
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20_base, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20_base, 1)
-F21_display = max(F21_raw, 0.0)  # never negative
-F22_display = max(F22_raw, 0.0)  # never negative
+F21_display = max(F21_raw, 0.0)
+F22_display = max(F22_raw, 0.0)
 
-# Inheritance-specific (background) — per your Excel formulas
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)  # corpus needed at retirement to fund inheritance
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
+# Inheritance-specific (background)
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)   # corpus needed at retirement for inheritance
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                 # Additional Lumpsum
 
-# Displayed required corpus = base + (inheritance corpus if non-zero)
+# Displayed corpus = base + inheritance piece (if any)
 F19 = F19_base + (F24 if F14 > 0 else 0.0)
 
-# Coverage relative to displayed requirement (so it reflects total including inheritance)
+# Coverage vs displayed corpus
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
@@ -565,7 +529,6 @@ st_html(
     <script>
       (function(){{
         var wantOpen = {"true" if show_totals else "false"};
-        var prevOpen = {"true" if prev_show else "false"};
         var p  = window.parent.document.getElementById('row3card0');
         var c1 = window.parent.document.getElementById('row3card1');
         var c2 = window.parent.document.getElementById('row3card2');
@@ -696,40 +659,67 @@ with cB:
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# Reduced space before CTA
+# =========================
+# CTA: Save + Redirect (anti-spam + idempotency)
+# =========================
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# CTA: Save + Redirect (one click)
+if "saving" not in st.session_state:
+    st.session_state.saving = False
+if "last_save_time" not in st.session_state:
+    st.session_state.last_save_time = 0.0
+if "last_payload_sig" not in st.session_state:
+    st.session_state.last_payload_sig = ""
+
+cooldown_sec = 8  # disable button briefly after a save
+
+# Prepare the payload row
+ist = pytz.timezone("Asia/Kolkata")
+now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+row = [
+    now_ist,
+    st.session_state.get("user_first_name", ""),
+    st.session_state.get("user_last_name", ""),
+    st.session_state.get("user_email", ""),
+    st.session_state.get("user_phone", ""),
+    int(F3), int(F4), int(F6),
+    float(infl_pct), 12.0,
+    float(F11), float(F12), float(F13), float(F14),
+    float(F19),                         # displayed corpus (base + inheritance if any)
+    float(FV_existing_at_ret),          # FV existing corpus
+    float(max(F20_base, 0.0)),          # base gap
+    float(max(F21_display, 0.0)),       # base SIP
+    float(max(F22_display, 0.0)),       # base lumpsum
+    float(max(F25, 0.0)),               # additional SIP (inheritance)
+    float(max(F26, 0.0)),               # additional lumpsum (inheritance)
+    float(round(coverage * 100.0, 1)),  # coverage %
+]
+
+# Signature to avoid duplicate writes when nothing changed (exclude timestamp)
+sig_basis = row[1:].copy()
+sig_str = "|".join(map(str, sig_basis))
+payload_sig = hashlib.sha256(sig_str.encode("utf-8")).hexdigest()
+
+# Button state & label
+time_since_last = time.time() - st.session_state.last_save_time
+cooldown_active = time_since_last < cooldown_sec
+disabled = st.session_state.saving or cooldown_active
+
+if disabled and cooldown_active:
+    remaining = max(1, int(round(cooldown_sec - time_since_last)))
+    btn_label = f"Please wait… ({remaining}s)"
+elif st.session_state.saving:
+    btn_label = "Saving…"
+else:
+    btn_label = "Save & Open Ventura"
+
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-save_clicked = st.button("Save & Open Ventura", type="primary", key="cta_submit")
+save_clicked = st.button(btn_label, type="primary", key="cta_submit", disabled=disabled)
 st.markdown("</div>", unsafe_allow_html=True)
 
-if save_clicked:
-    ist = pytz.timezone("Asia/Kolkata")
-    now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Write the reduced set of fields you wanted (with updated semantics)
-    row = [
-        now_ist,
-        st.session_state.get("user_first_name", ""),
-        st.session_state.get("user_last_name", ""),
-        st.session_state.get("user_email", ""),
-        st.session_state.get("user_phone", ""),
-        int(F3), int(F4), int(F6),
-        float(infl_pct), 12.0,
-        float(F11), float(F12), float(F13), float(F14),
-        float(F19),                         # Required corpus at retirement (displayed: base + F24 if any)
-        float(FV_existing_at_ret),          # Existing corpus at retirement (FV)
-        float(max(F20_base, 0.0)),          # Gap to fund (base only, aligns with base SIP/Lumpsum)
-        float(max(F21_display, 0.0)),       # Monthly SIP needed (base)
-        float(max(F22_display, 0.0)),       # Lumpsum needed today (base)
-        float(max(F25, 0.0)),               # Additional SIP (inheritance)
-        float(max(F26, 0.0)),               # Additional Lumpsum (inheritance)
-        float(round(coverage * 100.0, 1)),  # Coverage against displayed corpus
-    ]
-    ok = append_final_snapshot_to_gsheet_minimal(row)
-    if ok:
-        st.success("Saved! Opening Ventura in a new tab…")
+if save_clicked and not disabled:
+    if payload_sig == st.session_state.last_payload_sig:
+        st.info("No changes since last save. Skipping duplicate write.")
         st_html(
             """
             <script>
@@ -739,16 +729,37 @@ if save_clicked:
             """,
             height=0,
         )
-        st.markdown(
-            """
-            <div class='cta-wrap'>
-              <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
-                Open Ventura
-              </a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    else:
+        try:
+            st.session_state.saving = True
+            ok = append_final_snapshot_to_gsheet_minimal(row)
+            if ok:
+                st.session_state.last_payload_sig = payload_sig
+                st.session_state.last_save_time = time.time()
+                st.success("Saved! Opening Ventura in a new tab…")
+                st_html(
+                    """
+                    <script>
+                      try { window.open('https://www.venturasecurities.com/', '_blank', 'noopener'); }
+                      catch(e) {}
+                    </script>
+                    """,
+                    height=0,
+                )
+                st.markdown(
+                    """
+                    <div class='cta-wrap'>
+                      <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
+                        Open Ventura
+                      </a>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.error("Could not save. Please try again.")
+        finally:
+            st.session_state.saving = False
 
 # Sticky Summary
 st.markdown(
@@ -767,4 +778,4 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — Inheritance excluded from base SIP/Lumpsum; added to displayed corpus only</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — Autofill sign-in + anti-spam save + row3 animations/sizing preserved</div>", unsafe_allow_html=True)
