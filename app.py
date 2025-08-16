@@ -259,39 +259,48 @@ if not st.session_state.signed_in:
         with c4:
             phone = st.text_input("Phone number")
 
-        # --- Autofill sync: dispatch input/change events for browser-autofilled fields ---
+        # --- Robust autofill sync (native value setter + focus/blur + short poll) ---
         st.markdown(
             """
             <script>
               (function () {
                 const doc = window.parent.document;
 
-                function syncAutofillOnce() {
+                // Use the native value setter so React sees a real change.
+                const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+
+                function forceSync(el) {
+                  if (!el || el.disabled) return;
+                  const v = el.value ?? "";
+                  if (setter) setter.call(el, v);          // re-set current value
+                  el.dispatchEvent(new Event('input',  { bubbles: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                  el.focus({ preventScroll: true });
+                  el.blur();
+                }
+
+                function syncAll() {
+                  // Streamlit text inputs end up as plain <input> elements
                   const inputs = doc.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
                   inputs.forEach((el) => {
-                    if (el.disabled) return;
-                    const v = el.value || "";
-                    if (v !== (el.dataset._lastVal || "")) {
-                      el.dataset._lastVal = v;
-                      el.dispatchEvent(new Event("input",  { bubbles: true }));
-                      el.dispatchEvent(new Event("change", { bubbles: true }));
-                      el.dispatchEvent(new Event("blur",   { bubbles: true }));
-                    }
+                    // only bother if not empty (i.e., likely autofilled)
+                    if ((el.value ?? "").length) forceSync(el);
                   });
                 }
 
-                // Run immediately, then poll briefly to catch autofill after paint
-                let n = 0;
+                // Run a few times to catch late autofill
+                let ticks = 0;
                 const id = setInterval(() => {
-                  syncAutofillOnce();
-                  if (++n > 30) clearInterval(id); // ~6 seconds total
+                  syncAll();
+                  if (++ticks > 30) clearInterval(id); // ~6s total (30 * 200ms)
                 }, 200);
 
-                // Also retry when tab becomes visible again (common with credential pickers)
-                doc.addEventListener("visibilitychange", syncAutofillOnce, { passive: true });
+                // Also try on visibility change & pageshow
+                doc.addEventListener('visibilitychange', syncAll, { passive: true });
+                window.addEventListener('pageshow', syncAll, { passive: true });
 
                 // One immediate pass
-                syncAutofillOnce();
+                syncAll();
               })();
             </script>
             """,
@@ -318,6 +327,7 @@ if not st.session_state.signed_in:
 
     st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
     st.stop()
+
 
 # =====================================================================
 # CALCULATOR PAGE
