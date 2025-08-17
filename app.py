@@ -629,6 +629,9 @@ st.session_state.prev_snap_gap = int(gap)
 # =========================
 # CTA: Save + Redirect (cooldown + guaranteed open)
 # =========================
+# =========================
+# CTA: Save + Redirect (cooldown + guaranteed open)
+# =========================
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 if "saving" not in st.session_state:
@@ -679,42 +682,39 @@ st_html(
 )
 
 if save_clicked and not disabled:
+    st.session_state.saving = True
     try:
-        st.session_state.saving = True
+        with st.spinner("Saving to Google Sheet…"):
+            ist = pytz.timezone("Asia/Kolkata")
+            now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
+            row = [
+                now_ist,
+                st.session_state.get("user_first_name", ""),
+                st.session_state.get("user_last_name", ""),
+                st.session_state.get("user_email", ""),
+                st.session_state.get("user_phone", ""),
+                int(F3), int(F4), int(F6),
+                float(infl_pct), 12.0,
+                float(F11), float(F12), float(F13), float(F14),
+                float(F19),
+                float(FV_existing_at_ret),
+                float(max(F20_base, 0.0)),
+                float(max(F21_display, 0.0)),
+                float(max(F22_display, 0.0)),
+                float(max(F25, 0.0)),
+                float(max(F26, 0.0)),
+                float(round(coverage * 100.0, 1)),
+            ]
+            ok = append_final_snapshot_to_gsheet_minimal(row)
 
-        # Rebuild timestamp + row INSIDE the click so every click has a fresh timestamp.
-        ist = pytz.timezone("Asia/Kolkata")
-        now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-        row = [
-            now_ist,
-            st.session_state.get("user_first_name", ""),
-            st.session_state.get("user_last_name", ""),
-            st.session_state.get("user_email", ""),
-            st.session_state.get("user_phone", ""),
-            int(F3), int(F4), int(F6),
-            float(infl_pct), 12.0,
-            float(F11), float(F12), float(F13), float(F14),
-            float(F19),
-            float(FV_existing_at_ret),
-            float(max(F20_base, 0.0)),
-            float(max(F21_display, 0.0)),
-            float(max(F22_display, 0.0)),
-            float(max(F25, 0.0)),
-            float(max(F26, 0.0)),
-            float(round(coverage * 100.0, 1)),
-        ]
-
-        ok = append_final_snapshot_to_gsheet_minimal(row)
         if ok:
             st.session_state.last_save_time = time.time()
             st.success("Saved! (Ventura should already be open in a new tab.)")
         else:
             st.error("Could not save to Google Sheet. Please try again.")
-
     finally:
         st.session_state.saving = False
 
-    # Visible fallback link in case popup got blocked by policy
     st.markdown(
         """
         <div class='cta-wrap'>
@@ -725,6 +725,7 @@ if save_clicked and not disabled:
         """,
         unsafe_allow_html=True,
 )
+
 
 # === JS hook to GUARANTEE a new tab opens on real user gesture (pointerdown) ===
 st_html(
