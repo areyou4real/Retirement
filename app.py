@@ -640,7 +640,7 @@ st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-i# =========================
+# =========================
 # CTA: Two-button system (Save first, then show Open)
 # =========================
 if "save_guard" not in st.session_state:
