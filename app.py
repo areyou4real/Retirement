@@ -6,6 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import pytz
+import time  # NEW: for backoff retries
 
 # =========================
 # App Config
@@ -146,24 +147,34 @@ def get_ws():
     sh = gc.open_by_url(sheet_url)
     return sh.worksheet(ws_name)
 
+def _append_row_with_retry(ws, row, retries=3, base_delay=0.6):
+    last_exc = None
+    for i in range(retries):
+        try:
+            ws.append_row(row, value_input_option="USER_ENTERED")
+            return True
+        except Exception as e:
+            last_exc = e
+            time.sleep(base_delay * (2 ** i))
+    st.error(f"Could not write to Google Sheet: {last_exc}")
+    return False
+
 def append_signin_to_gsheet(first_name: str, last_name: str, email: str, phone: str) -> bool:
     try:
         ws = get_ws()
         ist = pytz.timezone("Asia/Kolkata")
         now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-        ws.append_row([now_ist, first_name.strip(), last_name.strip(), email.strip(), phone.strip(), "SIGNIN"], value_input_option="USER_ENTERED")
-        return True
+        return _append_row_with_retry(ws, [now_ist, first_name.strip(), last_name.strip(), email.strip(), phone.strip(), "SIGNIN"])
     except Exception as e:
-        st.error(f"Could not write sign-in to Google Sheet: {e}")
+        st.error(f"Could not prepare sign-in write: {e}")
         return False
 
 def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
     try:
         ws = get_ws()
-        ws.append_row(row, value_input_option="USER_ENTERED")
-        return True
+        return _append_row_with_retry(ws, row)
     except Exception as e:
-        st.error(f"Could not write final snapshot to Google Sheet: {e}")
+        st.error(f"Could not prepare final snapshot write: {e}")
         return False
 
 # =========================
@@ -233,7 +244,7 @@ if not st.session_state.signed_in:
         with c4:
             phone = st.text_input("Phone number", key="si_phone")
 
-        # --- Autofill Sync: poll inputs and dispatch input/change/blur if value changes ---
+        # Autofill Sync (Google/OS autofill)
         st_html(
             """
             <script>
@@ -241,7 +252,6 @@ if not st.session_state.signed_in:
                 const labels = ["First name","Last name","Email address","Phone number"];
                 function syncOnce(){
                   labels.forEach(lab=>{
-                    // Find the input by its aria-label
                     const sel = `input[aria-label="${lab}"]`;
                     const el = window.parent.document.querySelector(sel);
                     if(!el) return;
@@ -249,18 +259,14 @@ if not st.session_state.signed_in:
                     const last = el.getAttribute("data-last") || "";
                     if (val !== last) {
                       el.setAttribute("data-last", val);
-                      // fire events so Streamlit captures the change
                       el.dispatchEvent(new Event('input', {bubbles:true}));
                       el.dispatchEvent(new Event('change', {bubbles:true}));
-                      el.blur(); // commit value
+                      el.blur();
                     }
                   });
                 }
-                // Run quickly a few times, then slower
                 let n=0;
-                const fast = setInterval(()=>{ syncOnce(); if(++n>10){ clearInterval(fast);
-                  setInterval(syncOnce, 400); }
-                }, 120);
+                const fast = setInterval(()=>{ syncOnce(); if(++n>10){ clearInterval(fast); setInterval(syncOnce, 400); } }, 120);
               })();
             </script>
             """,
@@ -272,7 +278,6 @@ if not st.session_state.signed_in:
         st.markdown("</div>", unsafe_allow_html=True)
 
     if submit:
-        # Read the (possibly autofilled) values from widget state
         first_name = st.session_state.get("si_first_name", "")
         last_name  = st.session_state.get("si_last_name", "")
         email      = st.session_state.get("si_email", "")
@@ -291,7 +296,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — Autofill sync + gap fixes</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Reliable sheet writes + guaranteed redirect</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -385,38 +390,22 @@ F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 # =========================
 # CALCS (inheritance excluded from base SIP/Lumpsum)
 # =========================
-F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
-F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
-
-# Base required corpus at retirement EXCLUDING inheritance
+F17 = (F9 - F7) / (1.0 + F7)
+F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
 F19_base = PV(F17, (F6 - F4), -F18, 0.0, 1)
-
-# Existing investments FV at retirement
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
-
-# Base gap
 F20_base = F19_base - FV_existing_at_ret
-
-# Monthly SIP & Lumpsum (base only)
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20_base, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20_base, 1)
 F21_display = max(F21_raw, 0.0)
 F22_display = max(F22_raw, 0.0)
-
-# Inheritance-specific
 F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
 F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)
 F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)
-
-# Displayed required corpus = base + (inheritance corpus if any)
 F19 = F19_base + (F24 if F14 > 0 else 0.0)
-
-# Coverage
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
-
-# Totals (only shown if additional > 0)
 total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
 total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
 show_totals = (F25 > 1e-6) or (F26 > 1e-6)
@@ -462,7 +451,6 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Gap between row 1 and row 2
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # Row 2
@@ -493,10 +481,9 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
-# Same gap before row 3
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
-# Row 3 (totals) — uses SAME st.columns + .kpi cards; JS toggles classes for animation
+# Row 3 (totals)
 c0, c1, c2 = st.columns(3)
 with c0:
     st.markdown(
@@ -522,7 +509,7 @@ with c2:
         unsafe_allow_html=True,
     )
 
-# JS toggler so appear/disappear animates smoothly even across reruns
+# JS toggler animation
 st_html(
     f"""
     <script>
@@ -594,20 +581,13 @@ st_html(
           try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
 
-        // KPI row 1
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
-
-        // KPI row 2 (additional)
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
-
-        // KPI row 3 (totals)
         run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
         run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
-
-        // Snapshot
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
         run('snap2', {int(max(F20_base, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
@@ -626,10 +606,9 @@ st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
 st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
 st.session_state.prev_show_totals = show_totals
 
-# Reduced space before Status/Snapshot
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# Status of Retirement Goal & Snapshot
+# Status & Snapshot
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
@@ -645,7 +624,7 @@ with cB:
         f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div></div>",
         unsafe_allow_html=True,
     )
-    gap = max(F20_base, 0.0)  # base gap (aligns with base SIP/Lumpsum)
+    gap = max(F20_base, 0.0)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Gap to fund</div>"
         f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div></div>",
@@ -659,11 +638,10 @@ with cB:
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # =========================
-# CTA: Save (write to Sheets) + Guaranteed Redirect (delayed)
+# CTA: Reliable write + guaranteed open (new tab or fallback same-tab)
 # =========================
 if "save_guard" not in st.session_state:
     st.session_state.save_guard = False
@@ -673,12 +651,12 @@ save_clicked = st.button(
     "Save & Open Ventura",
     type="primary",
     key="cta_submit",
-    disabled=st.session_state.save_guard,  # spam guard disables button while saving
+    disabled=st.session_state.save_guard,
 )
 st.markdown("</div>", unsafe_allow_html=True)
 
 if save_clicked and not st.session_state.save_guard:
-    st.session_state.save_guard = True  # prevent double clicks within the same run
+    st.session_state.save_guard = True  # prevent re-clicks during this run
 
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
@@ -692,23 +670,21 @@ if save_clicked and not st.session_state.save_guard:
         int(F3), int(F4), int(F6),
         float(infl_pct), 12.0,
         float(F11), float(F12), float(F13), float(F14),
-        float(F19),                         # Required corpus at retirement (displayed: base + F24 if any)
-        float(FV_existing_at_ret),          # Existing corpus at retirement (FV)
-        float(max(F20_base, 0.0)),          # Gap to fund (base only, aligns with base SIP/Lumpsum)
-        float(max(F21_display, 0.0)),       # Monthly SIP needed (base)
-        float(max(F22_display, 0.0)),       # Lumpsum needed today (base)
-        float(max(F25, 0.0)),               # Additional SIP (inheritance)
-        float(max(F26, 0.0)),               # Additional Lumpsum (inheritance)
-        float(round(coverage * 100.0, 1)),  # Coverage against displayed corpus
+        float(F19),
+        float(FV_existing_at_ret),
+        float(max(F20_base, 0.0)),
+        float(max(F21_display, 0.0)),
+        float(max(F22_display, 0.0)),
+        float(max(F25, 0.0)),
+        float(max(F26, 0.0)),
+        float(round(coverage * 100.0, 1)),
     ]
 
-    # 1) Perform the write FIRST (synchronous)
     write_ok = append_final_snapshot_to_gsheet_minimal(row)
 
-    # 2) If write succeeded, show success and schedule redirect AFTER a short delay
     if write_ok:
-        st.success("Saved to Google Sheet successfully. Opening Ventura…")
-        # Fallback clickable link (always present)
+        st.success("Saved to Google Sheet. Opening Ventura…")
+        # Always show a clickable fallback link
         st.markdown(
             """
             <div class='cta-wrap'>
@@ -719,13 +695,21 @@ if save_clicked and not st.session_state.save_guard:
             """,
             unsafe_allow_html=True,
         )
-        # Delayed redirect: lets the write complete before leaving the page
+        # Try new tab; if blocked, fall back to same-tab navigation (guaranteed)
         st_html(
             """
             <script>
-              setTimeout(function(){
-                try { window.open('https://www.venturasecurities.com/', '_blank', 'noopener'); } catch(e) {}
-              }, 1500);
+              (function(){
+                var url = 'https://www.venturasecurities.com/';
+                setTimeout(function(){
+                  var w = null;
+                  try { w = window.open(url, '_blank', 'noopener'); } catch(e) {}
+                  if(!w || w.closed || typeof w.closed === 'undefined'){
+                    // Popup blocked -> guarantee by navigating current tab
+                    window.location.href = url;
+                  }
+                }, 600);
+              })();
             </script>
             """,
             height=0,
@@ -733,7 +717,7 @@ if save_clicked and not st.session_state.save_guard:
     else:
         st.error("Could not save to Google Sheet. Please try again.")
 
-    # Re-enable button on next run
+    # Re-enable on next run
     st.session_state.save_guard = False
 
 # Sticky Summary
@@ -753,4 +737,4 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.4 — Autofill sync; spam guard; guaranteed write then delayed redirect</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Reliable sheet writes + guaranteed open (tab if possible, same-tab fallback)</div>", unsafe_allow_html=True)
