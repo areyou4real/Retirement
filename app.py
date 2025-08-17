@@ -640,24 +640,43 @@ st.session_state.prev_snap_gap = int(gap)
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-# =========================
-# CTA: Reliable write + guaranteed open (new tab or fallback same-tab)
+i# =========================
+# CTA: Two-button system (Save first, then show Open)
 # =========================
 if "save_guard" not in st.session_state:
     st.session_state.save_guard = False
+if "save_done" not in st.session_state:
+    st.session_state.save_done = False  # becomes True only after a successful sheet write
 
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-save_clicked = st.button(
-    "Save & Open Ventura",
-    type="primary",
-    key="cta_submit",
-    disabled=st.session_state.save_guard,
-)
+bcol1, bcol2 = st.columns(2)
+
+with bcol1:
+    save_clicked = st.button(
+        "Save to Ventura Sheet",
+        type="primary",
+        key="cta_save",
+        disabled=st.session_state.save_guard,
+    )
+
+with bcol2:
+    open_clicked = False
+    if st.session_state.save_done:
+        # Show only after a successful save
+        open_clicked = st.button(
+            "Open Ventura",
+            type="primary",
+            key="cta_open",
+        )
+    else:
+        # Keep row height consistent before the Open button appears
+        st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
 st.markdown("</div>", unsafe_allow_html=True)
 
 if save_clicked and not st.session_state.save_guard:
-    st.session_state.save_guard = True  # prevent re-clicks during this run
+    st.session_state.save_guard = True  # prevent double taps within this run
 
+    # Build the same row payload as before (unchanged)
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -683,42 +702,42 @@ if save_clicked and not st.session_state.save_guard:
     write_ok = append_final_snapshot_to_gsheet_minimal(row)
 
     if write_ok:
-        st.success("Saved to Google Sheet. Opening Ventura…")
-        # Always show a clickable fallback link
-        st.markdown(
-            """
-            <div class='cta-wrap'>
-              <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
-                Open Ventura
-              </a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        # Try new tab; if blocked, fall back to same-tab navigation (guaranteed)
-        st_html(
-            """
-            <script>
-              (function(){
-                var url = 'https://www.venturasecurities.com/';
-                setTimeout(function(){
-                  var w = null;
-                  try { w = window.open(url, '_blank', 'noopener'); } catch(e) {}
-                  if(!w || w.closed || typeof w.closed === 'undefined'){
-                    // Popup blocked -> guarantee by navigating current tab
-                    window.location.href = url;
-                  }
-                }, 600);
-              })();
-            </script>
-            """,
-            height=0,
-        )
+        st.session_state.save_done = True
+        st.success("Saved to Google Sheet.")
+        # Immediately rerun so the "Open Ventura" button appears
+        st.rerun()
     else:
         st.error("Could not save to Google Sheet. Please try again.")
+        st.session_state.save_guard = False  # let them try again
 
-    # Re-enable on next run
-    st.session_state.save_guard = False
+if st.session_state.save_done and open_clicked:
+    # Try to open in a new tab; if blocked, fall back to same-tab navigation
+    st_html(
+        """
+        <script>
+          (function(){
+            var url = 'https://www.venturasecurities.com/';
+            var w = null;
+            try { w = window.open(url, '_blank', 'noopener'); } catch(e) {}
+            if(!w || w.closed || typeof w.closed === 'undefined'){
+              window.location.href = url;
+            }
+          })();
+        </script>
+        """,
+        height=0,
+    )
+    # Also show a clickable fallback link
+    st.markdown(
+        """
+        <div class='cta-wrap'>
+          <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
+            Open Ventura
+          </a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # Sticky Summary
 st.markdown(
