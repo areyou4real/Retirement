@@ -6,7 +6,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import pytz
-import time, hashlib  # anti-spam/idempotency
+import time  # <-- added
 
 # =========================
 # App Config
@@ -114,7 +114,7 @@ def inject_css():
           .panel:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
           .panel.kpi-surface{ background:var(--card-2); }
 
-          /* CURRENT DOM: iframe is a DIRECT CHILD of stElementContainer */
+          /* === NEW: Handle CURRENT DOM where iframe is a DIRECT CHILD of stElementContainer === */
           div[data-testid="stElementContainer"]:has(> iframe.stIFrame){
             margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important;
           }
@@ -122,8 +122,12 @@ def inject_css():
             display:block!important; height:0!important; min-height:0!important; width:0!important; border:0!important; margin:0!important; padding:0!important; overflow:hidden!important;
             position:absolute!important; left:-10000px!important; top:auto!important;
           }
-          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{ margin-top:0!important; }
-          .element-container:has(> iframe.stIFrame){ margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important; }
+          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{
+            margin-top:0!important;
+          }
+          .element-container:has(> iframe.stIFrame){
+            margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important;
+          }
         </style>
         """,
         unsafe_allow_html=True,
@@ -168,6 +172,24 @@ def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
         st.error(f"Could not write final snapshot to Google Sheet: {e}")
         return False
 
+# ---- NEW: robust appender with retries (used by CTA write) ----
+def append_row_robust(row, retries: int = 3, sleep_base: float = 0.8) -> bool:
+    """
+    Append with small, exponential backoff retries. Each retry re-auths via get_ws().
+    Returns True on first successful append, otherwise False.
+    """
+    last_err = None
+    for i in range(retries):
+        try:
+            ws = get_ws()  # fresh auth every attempt
+            ws.append_row(row, value_input_option="USER_ENTERED")
+            return True
+        except Exception as e:
+            last_err = e
+            time.sleep(sleep_base * (i + 1))
+    st.error(f"Could not write to Google Sheet after {retries} attempts: {last_err}")
+    return False
+
 # =========================
 # Indian Number Formatting
 # =========================
@@ -207,7 +229,7 @@ def number_to_words_short(n: float) -> str:
     return f"{absn:.0f}"
 
 # =========================
-# SIMPLE SIGN-IN GATE (Autofill-aware)
+# SIMPLE SIGN-IN GATE
 # =========================
 if "signed_in" not in st.session_state:
     st.session_state.signed_in = False
@@ -224,71 +246,35 @@ if not st.session_state.signed_in:
     with st.container():
         st.markdown("<div class='section'>", unsafe_allow_html=True)
         st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
-
         c1, c2 = st.columns(2)
         with c1:
-            first_name = st.text_input("First name", key="si_first_name")
+            first_name = st.text_input("First name")
         with c2:
-            last_name = st.text_input("Last name", key="si_last_name")
-
+            last_name = st.text_input("Last name")
         c3, c4 = st.columns(2)
         with c3:
-            email = st.text_input("Email address", key="si_email")
+            email = st.text_input("Email address")
         with c4:
-            phone = st.text_input("Phone number", key="si_phone")
-
-        # Autofill sync
-        st_html(
-            """
-            <script>
-              (function(){
-                function nudgeInputs(){
-                  const root = window.parent.document;
-                  const sel = 'input[type="text"],input[type="email"],input[type="tel"],input:not([type])';
-                  const nodes = root.querySelectorAll(sel);
-                  nodes.forEach((el)=>{
-                    if (el && el.value && el.value.length){
-                      el.dispatchEvent(new Event('input', {bubbles:true}));
-                      el.dispatchEvent(new Event('change', {bubbles:true}));
-                    }
-                  });
-                }
-                nudgeInputs();
-                let t=0, id=setInterval(()=>{ nudgeInputs(); if(++t>8) clearInterval(id); }, 250);
-                document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) nudgeInputs(); });
-                window.addEventListener('pageshow', nudgeInputs);
-                window.addEventListener('focus', nudgeInputs, true);
-                window.addEventListener('blur', (e)=>{ if(e && e.target && e.target.tagName==='INPUT') nudgeInputs(); }, true);
-              })();
-            </script>
-            """,
-            height=0,
-        )
-
+            phone = st.text_input("Phone number")
         submit = st.button("Sign in & continue", type="primary")
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     if submit:
-        first_name = st.session_state.get("si_first_name", "").strip()
-        last_name  = st.session_state.get("si_last_name", "").strip()
-        email      = st.session_state.get("si_email", "").strip()
-        phone      = st.session_state.get("si_phone", "").strip()
-
         if not first_name or not last_name or not email or not phone:
             st.warning("Please fill First name, Last name, Email, and Phone.")
         else:
             ok = append_signin_to_gsheet(first_name, last_name, email, phone)
             if ok:
                 st.session_state.signed_in = True
-                st.session_state.user_first_name = first_name
-                st.session_state.user_last_name  = last_name
-                st.session_state.user_email      = email
-                st.session_state.user_phone      = phone
+                st.session_state.user_first_name = first_name.strip()
+                st.session_state.user_last_name = last_name.strip()
+                st.session_state.user_email = email.strip()
+                st.session_state.user_phone = phone.strip()
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Autofill sign-in + guaranteed Ventura open on click</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -319,11 +305,12 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# INPUTS
+# INPUTS (3-per-row, robust clamping)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
+    # Row 1
     r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
         age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
@@ -343,6 +330,7 @@ with st.container():
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
+    # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=1.0)
@@ -353,6 +341,7 @@ with st.container():
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(monthly_exp)}")
 
+    # Row 3
     r3c1, r3c2, r3c3 = st.columns(3)
     with r3c1:
         yearly_exp = monthly_exp * 12.0
@@ -377,30 +366,41 @@ F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exi
 F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
 
 # =========================
-# CALCS (inheritance excluded from base SIP/Lumpsum)
+# CALCS (updated per new requirement)
 # =========================
-F17 = (F9 - F7) / (1.0 + F7)
-F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
+# Annual expenses at retirement start (unchanged)
+F17 = (F9 - F7) / (1.0 + F7)             # Net real return during retirement
+F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)    # Annual expenses at retirement start
 
+# Base required corpus at retirement EXCLUDING inheritance
 F19_base = PV(F17, (F6 - F4), -F18, 0.0, 1)
+
+# Existing investments FV at retirement (unchanged)
 FV_existing_at_ret = FV(F10, (F5), 0.0, -F13, 1)
+
+# Base gap (used for Monthly SIP & Lumpsum today)
 F20_base = F19_base - FV_existing_at_ret
 
+# Monthly SIP & Lumpsum (based ONLY on base gap)
 F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20_base, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20_base, 1)
-F21_display = max(F21_raw, 0.0)
-F22_display = max(F22_raw, 0.0)
+F21_display = max(F21_raw, 0.0)  # never negative
+F22_display = max(F22_raw, 0.0)  # never negative
 
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)
+# Inheritance-specific (background)
+F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)  # corpus needed at retirement to fund inheritance
+F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)  # Additional SIP for legacy
+F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)                # Additional Lumpsum for legacy
 
+# Displayed required corpus = base + (inheritance corpus if non-zero)
 F19 = F19_base + (F24 if F14 > 0 else 0.0)
 
+# Coverage relative to displayed requirement
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
 
+# Totals (only shown if additional > 0)
 total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
 total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
 show_totals = (F25 > 1e-6) or (F26 > 1e-6)
@@ -419,6 +419,7 @@ if "prev_total_lumpsum" not in st.session_state: st.session_state.prev_total_lum
 if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
 if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
+# Row 1
 k1, k2, k3 = st.columns(3)
 with k1:
     st.markdown(
@@ -445,8 +446,10 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
+# Gap between row 1 and row 2
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+# Row 2
 a1, a2, a3 = st.columns(3)
 with a1:
     st.markdown(
@@ -474,8 +477,10 @@ with a3:
         f"</div>", unsafe_allow_html=True,
     )
 
+# Same gap before row 3
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+# Row 3 (totals) — uses SAME st.columns + .kpi cards; JS toggles classes for animation
 c0, c1, c2 = st.columns(3)
 with c0:
     st.markdown(
@@ -501,11 +506,13 @@ with c2:
         unsafe_allow_html=True,
     )
 
+# JS toggler so appear/disappear animates smoothly even across reruns
 st_html(
     f"""
     <script>
       (function(){{
         var wantOpen = {"true" if show_totals else "false"};
+        var prevOpen = {"true" if prev_show else "false"};
         var p  = window.parent.document.getElementById('row3card0');
         var c1 = window.parent.document.getElementById('row3card1');
         var c2 = window.parent.document.getElementById('row3card2');
@@ -527,9 +534,13 @@ st_html(
         }}
 
         if (wantOpen) {{
-          toGhost(p); toShow(c1); toShow(c2);
+          toGhost(p);
+          toShow(c1);
+          toShow(c2);
         }} else {{
-          toHidden(c1); toHidden(c2); toHidden(p);
+          toHidden(c1);
+          toHidden(c2);
+          toHidden(p);
         }}
       }})();
     </script>
@@ -567,14 +578,20 @@ st_html(
           try {{ new countUp.CountUp(el, end, {{...opts, startVal: start}}).start(); }} catch (e) {{}}
         }}
 
+        // KPI row 1
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
+
+        // KPI row 2 (additional)
         run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
         run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
+
+        // KPI row 3 (totals)
         run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
         run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
 
+        // Snapshot
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
         run('snap2', {int(max(F20_base, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
@@ -612,7 +629,7 @@ with cB:
         f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div></div>",
         unsafe_allow_html=True,
     )
-    gap = max(F20_base, 0.0)
+    gap = max(F20_base, 0.0)  # base gap (aligns with base SIP/Lumpsum)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Gap to fund</div>"
         f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div></div>",
@@ -626,95 +643,52 @@ with cB:
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
 st.session_state.prev_snap_gap = int(gap)
 
-# =========================
-# CTA: Save + Redirect (cooldown + guaranteed open)
-# =========================
-# =========================
-# CTA: Save + Redirect (cooldown + guaranteed open)
-# =========================
+# Reduced space before CTA
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
-if "saving" not in st.session_state:
-    st.session_state.saving = False
-if "last_save_time" not in st.session_state:
-    st.session_state.last_save_time = 0.0
-
-cooldown_sec = 8
-time_since_last = time.time() - st.session_state.last_save_time
-cooldown_active = time_since_last < cooldown_sec
-disabled = st.session_state.saving or cooldown_active
-
-if disabled and cooldown_active:
-    remaining = max(1, int(round(cooldown_sec - time_since_last)))
-    btn_label = f"Please wait… ({remaining}s)"
-elif st.session_state.saving:
-    btn_label = "Saving…"
-else:
-    btn_label = "Save & Open Ventura"
-
+# CTA: Save + Redirect (one click)
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
-save_clicked = st.button(btn_label, type="primary", key="cta_submit", disabled=disabled)
+save_clicked = st.button("Save & Open Ventura", type="primary", key="cta_submit")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# JS hook to GUARANTEE a new tab opens on the actual user gesture
-st_html(
-    """
-    <script>
-      (function(){
-        const root = window.parent.document;
-        function bind(){
-          const btns = Array.from(root.querySelectorAll('button'));
-          const btn = btns.find(b => /Save\\s*&\\s*Open\\s*Ventura/i.test(b.textContent) && !b.disabled);
-          if(!btn || btn.dataset.vopenBound==='1') return;
-          btn.dataset.vopenBound = '1';
-          btn.addEventListener('pointerdown', function(){
-            try { window.open('https://www.venturasecurities.com/', '_blank', 'noopener'); } catch(e){}
-          }, {capture:false});
-        }
-        bind();
-        const mo = new MutationObserver(bind);
-        mo.observe(root.body, {childList:true, subtree:true});
-        window.addEventListener('focus', bind, true);
-      })();
-    </script>
-    """,
-    height=0,
-)
+if save_clicked:
+    ist = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
 
-if save_clicked and not disabled:
-    st.session_state.saving = True
-    try:
-        with st.spinner("Saving to Google Sheet…"):
-            ist = pytz.timezone("Asia/Kolkata")
-            now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
-            row = [
-                now_ist,
-                st.session_state.get("user_first_name", ""),
-                st.session_state.get("user_last_name", ""),
-                st.session_state.get("user_email", ""),
-                st.session_state.get("user_phone", ""),
-                int(F3), int(F4), int(F6),
-                float(infl_pct), 12.0,
-                float(F11), float(F12), float(F13), float(F14),
-                float(F19),
-                float(FV_existing_at_ret),
-                float(max(F20_base, 0.0)),
-                float(max(F21_display, 0.0)),
-                float(max(F22_display, 0.0)),
-                float(max(F25, 0.0)),
-                float(max(F26, 0.0)),
-                float(round(coverage * 100.0, 1)),
-            ]
-            ok = append_final_snapshot_to_gsheet_minimal(row)
+    # Write the reduced set of fields you wanted (with updated semantics)
+    row = [
+        now_ist,
+        st.session_state.get("user_first_name", ""),
+        st.session_state.get("user_last_name", ""),
+        st.session_state.get("user_email", ""),
+        st.session_state.get("user_phone", ""),
+        int(F3), int(F4), int(F6),
+        float(infl_pct), 12.0,
+        float(F11), float(F12), float(F13), float(F14),
+        float(F19),                         # Required corpus at retirement (displayed: base + F24 if any)
+        float(FV_existing_at_ret),          # Existing corpus at retirement (FV)
+        float(max(F20_base, 0.0)),          # Gap to fund (base only, aligns with base SIP/Lumpsum)
+        float(max(F21_display, 0.0)),       # Monthly SIP needed (base)
+        float(max(F22_display, 0.0)),       # Lumpsum needed today (base)
+        float(max(F25, 0.0)),               # Additional SIP (inheritance)
+        float(max(F26, 0.0)),               # Additional Lumpsum (inheritance)
+        float(round(coverage * 100.0, 1)),  # Coverage against displayed corpus
+    ]
 
-        if ok:
-            st.session_state.last_save_time = time.time()
-            st.success("Saved! (Ventura should already be open in a new tab.)")
-        else:
-            st.error("Could not save to Google Sheet. Please try again.")
-    finally:
-        st.session_state.saving = False
+    # ---- use robust writer (guaranteed attempts) ----
+    ok = append_row_robust(row)
 
+    # Open Ventura regardless of write result (keeps your UX behavior)
+    st.success("Saved! Opening Ventura in a new tab…" if ok else "Opening Ventura… (write will be retried next click if it failed)")
+    st_html(
+        """
+        <script>
+          try { window.open('https://www.venturasecurities.com/', '_blank', 'noopener'); }
+          catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
     st.markdown(
         """
         <div class='cta-wrap'>
@@ -724,60 +698,7 @@ if save_clicked and not disabled:
         </div>
         """,
         unsafe_allow_html=True,
-)
-
-
-# === JS hook to GUARANTEE a new tab opens on real user gesture (pointerdown) ===
-st_html(
-    """
-    <script>
-      (function(){
-        const root = window.parent.document;
-        function bind(){
-          const btns = Array.from(root.querySelectorAll('button'));
-          const btn = btns.find(b => /Save\\s*&\\s*Open\\s*Ventura/i.test(b.textContent) && !b.disabled);
-          if(!btn || btn.dataset.vopenBound==='1') return;
-          btn.dataset.vopenBound = '1';
-          btn.addEventListener('pointerdown', function(){
-            try { window.open('https://www.venturasecurities.com/', '_blank', 'noopener'); } catch(e){}
-          }, {capture:false});
-        }
-        bind();
-        const mo = new MutationObserver(bind);
-        mo.observe(root.body, {childList:true, subtree:true});
-        window.addEventListener('focus', bind, true);
-      })();
-    </script>
-    """,
-    height=0,
-)
-
-if save_clicked and not disabled:
-    if payload_sig == st.session_state.last_payload_sig:
-        st.info("No changes since last save. Skipping duplicate write.")
-        # Fallback visible link in case popup got blocked
-        st.markdown(
-            """
-            <div class='cta-wrap'>
-              <a class='start-btn' href='https://www.venturasecurities.com/' target='_blank' rel='noopener'>
-                Open Ventura
-              </a>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        try:
-            st.session_state.saving = True
-            ok = append_final_snapshot_to_gsheet_minimal(row)
-            if ok:
-                st.session_state.last_payload_sig = payload_sig
-                st.session_state.last_save_time = time.time()
-                st.success("Saved! (Ventura should already be open in a new tab.)")
-            else:
-                st.error("Could not save. Please try again.")
-        finally:
-            st.session_state.saving = False
+    )
 
 # Sticky Summary
 st.markdown(
@@ -796,4 +717,4 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Guaranteed Ventura open on click + anti-spam save</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.3 — Inheritance excluded from base SIP/Lumpsum; added to displayed corpus only</div>", unsafe_allow_html=True)
