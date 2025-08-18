@@ -235,54 +235,19 @@ if not st.session_state.signed_in:
         st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            first_name = st.text_input("First name", key="si_first_name")
+            first_name = st.text_input("First name")
         with c2:
-            last_name = st.text_input("Last name", key="si_last_name")
+            last_name = st.text_input("Last name")
         c3, c4 = st.columns(2)
         with c3:
-            email = st.text_input("Email address", key="si_email")
+            email = st.text_input("Email address")
         with c4:
-            phone = st.text_input("Phone number", key="si_phone")
-
-        # Autofill Sync (Google/OS autofill)
-        st_html(
-            """
-            <script>
-              (function(){
-                const labels = ["First name","Last name","Email address","Phone number"];
-                function syncOnce(){
-                  labels.forEach(lab=>{
-                    const sel = `input[aria-label="${lab}"]`;
-                    const el = window.parent.document.querySelector(sel);
-                    if(!el) return;
-                    const val = el.value || "";
-                    const last = el.getAttribute("data-last") || "";
-                    if (val !== last) {
-                      el.setAttribute("data-last", val);
-                      el.dispatchEvent(new Event('input', {bubbles:true}));
-                      el.dispatchEvent(new Event('change', {bubbles:true}));
-                      el.blur();
-                    }
-                  });
-                }
-                let n=0;
-                const fast = setInterval(()=>{ syncOnce(); if(++n>10){ clearInterval(fast); setInterval(syncOnce, 400); } }, 120);
-              })();
-            </script>
-            """,
-            height=0,
-        )
-
-        submit = st.button("Sign in & continue", type="primary", key="signin_btn")
+            phone = st.text_input("Phone number")
+        submit = st.button("Sign in & continue", type="primary")
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     if submit:
-        first_name = st.session_state.get("si_first_name", "")
-        last_name  = st.session_state.get("si_last_name", "")
-        email      = st.session_state.get("si_email", "")
-        phone      = st.session_state.get("si_phone", "")
-
         if not first_name or not last_name or not email or not phone:
             st.warning("Please fill First name, Last name, Email, and Phone.")
         else:
@@ -296,7 +261,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Reliable sheet writes + guaranteed redirect</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
