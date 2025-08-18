@@ -606,12 +606,12 @@ st.session_state.prev_snap_gap = int(gap)
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # =========================
-# CTA: Save first, then show Open Ventura (reliable)
+# CTA: Save first, then show Open Ventura (as a real button)
 # =========================
 if "save_guard" not in st.session_state:
-    st.session_state.save_guard = False        # prevents double-click spam during a single run
+    st.session_state.save_guard = False
 if "save_done" not in st.session_state:
-    st.session_state.save_done = False         # toggles after a successful sheet write
+    st.session_state.save_done = False
 
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
 bcol1, bcol2 = st.columns(2)
@@ -621,31 +621,23 @@ with bcol1:
         "Save to Ventura Sheet",
         type="primary",
         key="cta_save",
-        disabled=st.session_state.save_guard or st.session_state.save_done,  # disable after success
+        disabled=st.session_state.save_guard or st.session_state.save_done,
     )
 
 with bcol2:
     if st.session_state.save_done:
-        # Use a real link styled as a button so it ALWAYS opens in a new tab.
-        st.markdown(
-            """
-            <a class="start-btn" href="https://www.venturasecurities.com/" target="_blank" rel="noopener">
-              Open Ventura
-            </a>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Looks exactly like a Streamlit primary button and opens in a new tab
+        st.link_button("Open Ventura", "https://www.venturasecurities.com/", type="primary")
     else:
-        # Keep the row height stable until the Open button appears
+        # keep row height stable before the button appears
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Handle SAVE click (single run, debounced)
+# Handle SAVE click (debounced)
 if save_clicked and not st.session_state.save_guard and not st.session_state.save_done:
-    st.session_state.save_guard = True  # debounce immediately
+    st.session_state.save_guard = True
 
-    # Build payload (unchanged fields from your code)
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
     row = [
@@ -657,25 +649,24 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
         int(F3), int(F4), int(F6),
         float(infl_pct), 12.0,
         float(F11), float(F12), float(F13), float(F14),
-        float(F19),                         # displayed corpus (base + F24 if any)
-        float(FV_existing_at_ret),          # FV of existing at retirement
-        float(max(F20_base, 0.0)),          # base gap
-        float(max(F21_display, 0.0)),       # base SIP
-        float(max(F22_display, 0.0)),       # base lumpsum
-        float(max(F25, 0.0)),               # additional SIP (inheritance)
-        float(max(F26, 0.0)),               # additional lumpsum (inheritance)
-        float(round(coverage * 100.0, 1)),  # coverage
+        float(F19),
+        float(FV_existing_at_ret),
+        float(max(F20_base, 0.0)),
+        float(max(F21_display, 0.0)),
+        float(max(F22_display, 0.0)),
+        float(max(F25, 0.0)),
+        float(max(F26, 0.0)),
+        float(round(coverage * 100.0, 1)),
     ]
 
     write_ok = append_final_snapshot_to_gsheet_minimal(row)
-
     if write_ok:
         st.session_state.save_done = True
         st.success("Saved to Google Sheet.")
-        st.rerun()  # Reveal the Open Ventura control on next render
+        st.rerun()
     else:
         st.error("Could not save to Google Sheet. Please try again.")
-        st.session_state.save_guard = False  # allow retry
+        st.session_state.save_guard = False
 
 # Sticky Summary
 st.markdown(
