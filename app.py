@@ -606,12 +606,12 @@ st.session_state.prev_snap_gap = int(gap)
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # =========================
-# CTA: Two-button system (Save first, then show Open) — NO FALLBACK
+# CTA: Save first, then show Open Ventura (reliable)
 # =========================
 if "save_guard" not in st.session_state:
-    st.session_state.save_guard = False
+    st.session_state.save_guard = False        # prevents double-click spam during a single run
 if "save_done" not in st.session_state:
-    st.session_state.save_done = False  # True only after a successful sheet write
+    st.session_state.save_done = False         # toggles after a successful sheet write
 
 st.markdown("<div class='cta-wrap'>", unsafe_allow_html=True)
 bcol1, bcol2 = st.columns(2)
@@ -621,26 +621,31 @@ with bcol1:
         "Save to Ventura Sheet",
         type="primary",
         key="cta_save",
-        disabled=st.session_state.save_guard,
+        disabled=st.session_state.save_guard or st.session_state.save_done,  # disable after success
     )
 
 with bcol2:
-    open_clicked = False
     if st.session_state.save_done:
-        open_clicked = st.button(
-            "Open Ventura",
-            type="primary",
-            key="cta_open",
+        # Use a real link styled as a button so it ALWAYS opens in a new tab.
+        st.markdown(
+            """
+            <a class="start-btn" href="https://www.venturasecurities.com/" target="_blank" rel="noopener">
+              Open Ventura
+            </a>
+            """,
+            unsafe_allow_html=True,
         )
     else:
-        # keep row height stable before Open appears
+        # Keep the row height stable until the Open button appears
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
+
 st.markdown("</div>", unsafe_allow_html=True)
 
-if save_clicked and not st.session_state.save_guard:
-    st.session_state.save_guard = True  # debounce
+# Handle SAVE click (single run, debounced)
+if save_clicked and not st.session_state.save_guard and not st.session_state.save_done:
+    st.session_state.save_guard = True  # debounce immediately
 
-    # Build payload (unchanged)
+    # Build payload (unchanged fields from your code)
     ist = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S")
     row = [
@@ -667,24 +672,10 @@ if save_clicked and not st.session_state.save_guard:
     if write_ok:
         st.session_state.save_done = True
         st.success("Saved to Google Sheet.")
-        st.rerun()
+        st.rerun()  # Reveal the Open Ventura control on next render
     else:
         st.error("Could not save to Google Sheet. Please try again.")
         st.session_state.save_guard = False  # allow retry
-
-if st.session_state.save_done and open_clicked:
-    # Strictly open a new tab. No link fallback or same-tab redirect.
-    st_html(
-        """
-        <script>
-          (function(){
-            var url = 'https://www.venturasecurities.com/';
-            try { window.open(url, '_blank', 'noopener'); } catch(e) {}
-          })();
-        </script>
-        """,
-        height=0,
-    )
 
 # Sticky Summary
 st.markdown(
