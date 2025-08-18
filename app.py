@@ -618,7 +618,7 @@ bcol1, bcol2 = st.columns(2)
 
 with bcol1:
     save_clicked = st.button(
-        "Save to Ventura Sheet",
+        "Start Investing Now",
         type="primary",
         key="cta_save",
         disabled=st.session_state.save_guard or st.session_state.save_done,
@@ -627,7 +627,7 @@ with bcol1:
 with bcol2:
     if st.session_state.save_done:
         # Looks exactly like a Streamlit primary button and opens in a new tab
-        st.link_button("Open Ventura", "https://www.venturasecurities.com/", type="primary")
+        st.link_button("Please click here if not redirected", "https://www.venturasecurities.com/", type="primary")
     else:
         # keep row height stable before the button appears
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
