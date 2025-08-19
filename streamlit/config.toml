@@ -1,0 +1,18 @@
+[server]
+headless = true
+
+[theme]
+primaryColor = "#4CAF50"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#000000"
+
+[menuItems]
+# Hide specific menu items
+reportABug = false
+about = false
+getHelp = false
+
+# Remove GitHub & Fork options
+gitHubRepo = ""
+gitHubBranch = ""
