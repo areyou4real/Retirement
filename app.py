@@ -686,3 +686,11 @@ st.markdown(
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5</div>", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+/* Hide GitHub icon & menu as a fallback */
+#GithubIcon, #MainMenu {visibility: hidden;}
+</style>
+""", unsafe_allow_html=True)
+
