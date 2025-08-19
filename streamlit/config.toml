@@ -1,7 +1,0 @@
-[client]
-# Hides developer options like "Fork" / GitHub in the toolbar
-toolbarMode = "viewer"
-
-[ui]
-# (Optional) also hide the thin top bar
-hideTopBar = true
