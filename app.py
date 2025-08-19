@@ -232,7 +232,7 @@ if not st.session_state.signed_in:
 
     with st.container():
         st.markdown("<div class='section'>", unsafe_allow_html=True)
-        st.markdown("<div class='card'><h3>Dheer details</h3>", unsafe_allow_html=True)
+        st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             first_name = st.text_input("First name")
