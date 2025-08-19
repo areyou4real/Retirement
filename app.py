@@ -263,6 +263,13 @@ if not st.session_state.signed_in:
                 
 
     st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
+    hide_all = """
+    <style>
+    #MainMenu {visibility: hidden;}     /* hides the hamburger menu */
+    footer {visibility: hidden;}       /* hides 'Made with Streamlit' footer */
+    header {visibility: hidden;}       /* hides top header bar */
+    </style>
+    """
     st.markdown(hide_all, unsafe_allow_html=True)
     st.stop()
     
