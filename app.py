@@ -671,10 +671,10 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     write_ok = append_final_snapshot_to_gsheet_minimal(row)
     if write_ok:
         st.session_state.save_done = True
-        st.success("Saved to Google Sheet.")
+        st.success("Success.")
         st.rerun()
     else:
-        st.error("Could not save to Google Sheet. Please try again.")
+        st.error("Please try again later")
         st.session_state.save_guard = False
 
 # Sticky Summary
