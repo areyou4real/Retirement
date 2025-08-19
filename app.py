@@ -261,7 +261,7 @@ if not st.session_state.signed_in:
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2 — row3 uses same columns & card size</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
     st.stop()
 
 # =====================================================================
@@ -685,4 +685,4 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5 — Reliable sheet writes + guaranteed open (tab if possible, same-tab fallback)</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5</div>", unsafe_allow_html=True)
