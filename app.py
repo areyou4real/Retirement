@@ -132,6 +132,13 @@ def inject_css():
 
 inject_css()
 
+def show_logo():
+    st.markdown("""
+        <div style='text-align:center; margin: 10px 0 20px 0;'>
+            <img src="ventura.png" alt="App Logo" style="height:80px;"/>
+        </div>
+    """, unsafe_allow_html=True)
+
 # =========================
 # Google Sheets helpers
 # =========================
@@ -318,6 +325,7 @@ st_html("""
 """, height=0)
 
 if not st.session_state.signed_in:
+    show_logo()
     st.markdown("""
         <div class='hero'>
           <div class='title'>Welcome</div>
