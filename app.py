@@ -830,7 +830,7 @@ with cB:
            <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem;
            margin-top:10px;
            margin-bottom:10px;'>
-        You have a surplus for the required goal; SIP/Lumpsum may be 0. Inheritance is additional
+        You have a surplus for the required goal. Inheritance is additional.
         </div>
         """,
         unsafe_allow_html=True
