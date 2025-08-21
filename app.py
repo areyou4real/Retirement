@@ -289,7 +289,7 @@ def number_to_words_short(n: float) -> str:
     return f"{absn:.0f}"
 
 # =========================
-# SIMPLE SIGN-IN GATE (Autofill-Hardened + Strict Numeric Phone + Email/Phone Validation)
+# SIMPLE SIGN-IN GATE (Autofill-Hardened + Strict Numeric Phone + Simple Email Check)
 # =========================
 import re, time
 
@@ -357,9 +357,7 @@ st_html("""
 
     // Block non-digit keypresses
     el.addEventListener('keydown', (e) => {
-      // Allow shortcuts (Ctrl/Cmd + A/C/V/X/Z/Y)
       if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z','y'].includes(e.key.toLowerCase())) return;
-
       if (allowedControl.has(e.key)) return;
       if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
         e.preventDefault();
@@ -373,8 +371,8 @@ st_html("""
       if (v !== digits) el.value = digits;
     };
     el.addEventListener('input', clean);
-    el.addEventListener('paste', (e) => { setTimeout(clean, 0); });
-    el.addEventListener('drop',  (e) => { setTimeout(clean, 0); });
+    el.addEventListener('paste', () => setTimeout(clean, 0));
+    el.addEventListener('drop',  () => setTimeout(clean, 0));
   }
 
   // Identify phone & email by placeholder (as set in Python)
@@ -382,11 +380,10 @@ st_html("""
   const phone = all.find(el => (el.placeholder || '').includes('98xx-xxxxxx'));
   const email = all.find(el => (el.placeholder || '').includes('@example.com'));
 
-  if (phone) enforceDigitsOnly(phone, 9); // at least 9 digits (i.e., > 8)
+  if (phone) enforceDigitsOnly(phone, 9);
   if (email) {
     email.setAttribute('type','email');
     email.setAttribute('inputmode','email');
-    email.setAttribute('pattern','^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
   }
 })();
 </script>
@@ -418,7 +415,6 @@ if not st.session_state.signed_in:
                                   placeholder="name@example.com",
                                   help="We’ll only use this to save your plan.")
         with c4:
-            # digits-only enforced via JS; backend will validate again
             phone = st.text_input("Mobile number",
                                   key=_af_key("ph"),
                                   placeholder="+91 98xx-xxxxxx")
@@ -439,15 +435,15 @@ if not st.session_state.signed_in:
         ph_digits = re.sub(r"\\D+", "", ph)
         phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
 
-        # Email: lightweight regex
-        email_ok = bool(re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", em))
+        # Email: simple check → must contain "@"
+        email_ok = "@" in em
 
         if not fn or not ln or not em or not ph:
             st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
         elif not phone_ok:
             st.warning("Mobile number must contain only digits and be at least 9 digits long.")
         elif not email_ok:
-            st.warning("Please enter a valid email address (e.g., name@example.com).")
+            st.warning("Please enter a valid email address (must contain '@').")
         else:
             # Use the digit-only version for storage
             ok = append_signin_to_gsheet(fn, ln, em, ph_digits)
