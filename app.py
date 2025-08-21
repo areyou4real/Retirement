@@ -911,7 +911,7 @@ with st.expander("Review your contact details"):
 
 # ✅ Persistent success message (always below the form/expander)
 if st.session_state.get("edits_saved"):
-    st.success("Details updated successfully. These will be used when you proceed.")
+    st.success("Details updated successfully.")
 
 st.markdown("</div>", unsafe_allow_html=True)  # .card
 st.markdown("</div>", unsafe_allow_html=True)  # .section
