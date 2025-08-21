@@ -510,7 +510,7 @@ with st.container():
 
     # Row 1
     with r1c1:
-    age_now = st.number_input(
+      age_now = st.number_input(
         "Current age", 
         min_value=16, 
         max_value=70, 
@@ -518,8 +518,8 @@ with st.container():
         step=1
     )
     with r1c2:
-    min_retire_age = age_now + 5  # enforce gap
-    age_retire = st.number_input(
+      min_retire_age = age_now + 5  # enforce gap
+      age_retire = st.number_input(
         "Target retirement age",
         min_value=min_retire_age,
         max_value=70,
@@ -527,8 +527,8 @@ with st.container():
         step=1
     )
     with r1c3:
-    min_life_exp = age_retire + 1
-    life_expectancy = st.number_input(
+      min_life_exp = age_retire + 1
+      life_expectancy = st.number_input(
         "Life expectancy",
         min_value=min_life_exp,
         max_value=110,
