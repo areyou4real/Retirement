@@ -650,7 +650,7 @@ with a1:
         """
         <div class='kpi'>
           <div class='label' style='font-weight:700;'>Pick one</div>
-          <div class='value' style='color:#e63946; font-weight:800;'>
+          <div class='value' style='color:#3359d6; font-weight:800;'>
             Monthly SIP / Lumpsum Today
           </div>
           <div class='sub'>&nbsp;</div>
