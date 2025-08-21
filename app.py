@@ -845,6 +845,9 @@ st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 # =========================
 # Review & Edit Contact Details (before CTA)
 # =========================
+if "edits_saved" not in st.session_state:
+    st.session_state.edits_saved = False  # persist flag
+
 with st.expander("Review your contact details"):
     with st.form("edit_contact_form", clear_on_submit=False):
         ec1, ec2 = st.columns(2)
@@ -864,7 +867,6 @@ with st.expander("Review your contact details"):
         save_edits = st.form_submit_button("Save changes", type="primary")
 
     if save_edits:
-        # --- Same validation policy as your sign-in page ---
         import re
         fn = (edit_fn or "").strip()
         ln = (edit_ln or "").strip()
@@ -875,10 +877,13 @@ with st.expander("Review your contact details"):
         email_ok = ("@" in em)
 
         if not fn or not ln or not em or not ph:
+            st.session_state.edits_saved = False
             st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
         elif not phone_ok:
+            st.session_state.edits_saved = False
             st.warning("Mobile number must contain only digits and be at least 9 digits long.")
         elif not email_ok:
+            st.session_state.edits_saved = False
             st.warning("Please enter a valid email address (must contain '@').")
         else:
             # Update session state (used by CTA write)
@@ -887,7 +892,7 @@ with st.expander("Review your contact details"):
             st.session_state.user_email      = em
             st.session_state.user_phone      = ph_digits
 
-            # NEW: also update the original SIGNIN row in Google Sheet
+            # Also update the original SIGNIN row in Google Sheet
             old_email_for_lookup = st.session_state.get("signin_email_at_login", st.session_state.get("user_email",""))
             updated = update_latest_signin_row(
                 old_email=old_email_for_lookup,
@@ -897,16 +902,20 @@ with st.expander("Review your contact details"):
                 new_phone=ph_digits,
             )
             if updated:
-                # If email changed, update the lookup key for future edits
                 st.session_state.signin_email_at_login = em
             else:
-                st.warning("Details updated locally, but the original sign-in row could not be updated in the sheet.")
+                st.warning("Details updated locally, but the original could not be updated.")
 
-            st.success("Details updated. These will be used when you proceed.")
-            st.rerun()
+            st.session_state.edits_saved = True  # ✅ persist success
+            # no st.rerun(); let the success render persistently below
+
+# ✅ Persistent success message (always below the form/expander)
+if st.session_state.get("edits_saved"):
+    st.success("Details updated successfully. These will be used when you proceed.")
 
 st.markdown("</div>", unsafe_allow_html=True)  # .card
 st.markdown("</div>", unsafe_allow_html=True)  # .section
+
 
 # =========================
 # CTA: Save first, then show Open Ventura (as a real button)
