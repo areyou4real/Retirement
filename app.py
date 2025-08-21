@@ -144,7 +144,7 @@ def _data_uri(path: str) -> str:
     mime = mimetypes.guess_type(p.name)[0] or "image/png"
     return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode("utf-8")
 
-def show_logo_top(path: str = "ventura.png", height: int = 50):
+def show_logo_top(path: str = "ventura.png", height: int = 80):
     src = _data_uri(path)
     if not src:
         return
