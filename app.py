@@ -536,7 +536,7 @@ with k2:
         f"<div class='kpi'>"
         f"<div class='label'>Monthly SIP needed</div>"
         f"<div id='kpi2' class='value'>{fmt_money_indian(st.session_state.get('prev_F21', 0))}</div>"
-        f"<div class='sub'>Excludes inheritance; start of month</div>"
+        f"<div class='sub'>Amount to be invested each month</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k3:
@@ -544,7 +544,7 @@ with k3:
         f"<div class='kpi'>"
         f"<div class='label'>Lumpsum needed today</div>"
         f"<div id='kpi3' class='value'>{fmt_money_indian(st.session_state.get('prev_F22', 0))}</div>"
-        f"<div class='sub'>Excludes inheritance; one-time</div>"
+        f"<div class='sub'>If you prefer a one-time investment</div>"
         f"</div>", unsafe_allow_html=True,
     )
 
@@ -709,7 +709,7 @@ st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 cA, cB = st.columns([1.2, 1])
 with cA:
     st.markdown("<div class='panel kpi-surface'><h3>Status of Retirement Goal</h3>", unsafe_allow_html=True)
-    st.caption("Portion of the (base + inheritance if any) corpus covered by your investments grown to retirement")
+    st.caption("Portion of the required corpus covered by your investments grown to retirement")
     st.progress(coverage)
     st.markdown(f"<span class='badge {status_class}'>Coverage: {coverage*100:.1f}% — {status_text}</span>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -728,7 +728,7 @@ with cB:
         unsafe_allow_html=True,
     )
     if F20_base < 0:
-        st.caption("You have a **surplus** for the base goal; SIP/Lumpsum may be 0. Inheritance is handled as additional.")
+        st.caption("You have a **surplus** for the required goal; SIP/Lumpsum may be 0. Inheritance is additional.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Update prev snapshot values
