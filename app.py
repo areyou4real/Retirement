@@ -349,7 +349,7 @@ st_html("""
 """, height=0)
 
 if not st.session_state.signed_in:
-    show_logo_top("ventura.png", height=80)
+    show_logo_top("ventura.png", height=50)
     st.markdown("""
         <div class='hero'>
           <div class='title'>Welcome</div>
