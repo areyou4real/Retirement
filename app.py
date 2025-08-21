@@ -937,7 +937,7 @@ with bcol1:
     )
     # 👇 Persistent caption immediately under the button (only after success)
     if st.session_state.save_done:
-        st.markdown("<div style='text-align:center; font-weight:800; color:var(--muted); font-size:0.85rem;'>A representative will reach out to you shortly.</div>", unsafe_allow_html=True)
+        st.markdown("<div font-weight:800; color:var(--muted); font-size:0.85rem;'>A representative will reach out to you shortly.</div>", unsafe_allow_html=True)
 with bcol2:
     if st.session_state.save_done:
         # Looks exactly like a Streamlit primary button and opens in a new tab
