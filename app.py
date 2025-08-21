@@ -981,6 +981,7 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     else:
         st.error("Please try again later")
         st.session_state.save_guard = False
+st.markdown("---")
 
 # Sticky Summary
 st.markdown(
