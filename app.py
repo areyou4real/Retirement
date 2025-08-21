@@ -825,8 +825,16 @@ with cB:
         unsafe_allow_html=True,
     )
     if F20_base < 0:
-        st.caption("You have a **surplus** for the required goal; SIP/Lumpsum may be 0. Inheritance is additional.")
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+           """
+           <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem;
+           margin-top:10px;
+           margin-bottom:10px;'>
+        You have a surplus for the required goal; SIP/Lumpsum may be 0. Inheritance is additional
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
 
 # Update prev snapshot values
 st.session_state.prev_snap_fv = int(FV_existing_at_ret)
