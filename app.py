@@ -447,14 +447,6 @@ if not st.session_state.signed_in:
                 st.error("Could not save your sign-in. Please try again.")
 
     st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
-    hide_all = """
-    <style>
-    #MainMenu {visibility: hidden;}     /* hides the hamburger menu */
-    footer {visibility: hidden;}       /* hides 'Made with Streamlit' footer */
-    header {visibility: hidden;}       /* hides top header bar */
-    </style>
-    """
-    st.markdown(hide_all, unsafe_allow_html=True)
     st.stop()
     
 # =====================================================================
@@ -880,15 +872,5 @@ st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
 st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5</div>", unsafe_allow_html=True)
 
-import streamlit as st
 
-# Hide everything: main menu, footer, and top bar
-hide_all = """
-<style>
-#MainMenu {visibility: hidden;}     /* hides the hamburger menu */
-footer {visibility: hidden;}       /* hides 'Made with Streamlit' footer */
-header {visibility: hidden;}       /* hides top header bar */
-</style>
-"""
-st.markdown(hide_all, unsafe_allow_html=True)
 
