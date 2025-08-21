@@ -404,9 +404,9 @@ if not st.session_state.signed_in:
     with st.form("signin_form", clear_on_submit=False):
         c1, c2 = st.columns(2)
         with c1:
-            first_name = st.text_input("First name", key=_af_key("fn"), placeholder="e.g., Asha")
+            first_name = st.text_input("First name", key=_af_key("fn"), placeholder="")
         with c2:
-            last_name  = st.text_input("Last name",  key=_af_key("ln"), placeholder="e.g., Mehta")
+            last_name  = st.text_input("Last name",  key=_af_key("ln"), placeholder="")
 
         c3, c4 = st.columns(2)
         with c3:
