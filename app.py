@@ -791,6 +791,70 @@ st.session_state.prev_snap_gap = int(gap)
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # =========================
+# Review & Edit Contact Details (before CTA)
+# =========================
+st.markdown("<div class='section'>", unsafe_allow_html=True)
+st.markdown("<div class='card'><h3>Review your contact details</h3>", unsafe_allow_html=True)
+
+# Display current details
+cL, cR = st.columns(2)
+with cL:
+    st.markdown(f"**First name:** {st.session_state.get('user_first_name','')}")
+    st.markdown(f"**Contact email:** {st.session_state.get('user_email','')}")
+with cR:
+    st.markdown(f"**Last name:** {st.session_state.get('user_last_name','')}")
+    st.markdown(f"**Mobile number:** {st.session_state.get('user_phone','')}")
+
+with st.expander("Edit details"):
+    with st.form("edit_contact_form", clear_on_submit=False):
+        ec1, ec2 = st.columns(2)
+        with ec1:
+            edit_fn = st.text_input("First name", value=st.session_state.get("user_first_name",""))
+        with ec2:
+            edit_ln = st.text_input("Last name", value=st.session_state.get("user_last_name",""))
+
+        ec3, ec4 = st.columns(2)
+        with ec3:
+            # Keep browser conveniences; backend will only check '@'
+            edit_em = st.text_input("Contact email", value=st.session_state.get("user_email",""), placeholder="name@example.com")
+        with ec4:
+            # JS (already injected earlier) will enforce digits-only on placeholders with '98xx-xxxxxx'
+            edit_ph = st.text_input("Mobile number", value=st.session_state.get("user_phone",""), placeholder="+91 98xx-xxxxxx")
+
+        save_edits = st.form_submit_button("Save changes", type="primary")
+
+    if save_edits:
+        # --- Same validation policy as your sign-in page ---
+        import re
+        fn = (edit_fn or "").strip()
+        ln = (edit_ln or "").strip()
+        em = (edit_em or "").strip()
+        ph = (edit_ph or "").strip()
+        ph_digits = re.sub(r"\D+", "", ph)
+        phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
+        email_ok = ("@" in em)
+
+        if not fn or not ln or not em or not ph:
+            st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
+        elif not phone_ok:
+            st.warning("Mobile number must contain only digits and be at least 9 digits long.")
+        elif not email_ok:
+            st.warning("Please enter a valid email address (must contain '@').")
+        else:
+            # Update session state (used by CTA write)
+            st.session_state.user_first_name = fn
+            st.session_state.user_last_name  = ln
+            st.session_state.user_email      = em
+            st.session_state.user_phone      = ph_digits
+            st.success("Details updated. These will be used when you proceed.")
+            # Optional: refresh the summary above to reflect new values
+            st.rerun()
+
+st.markdown("</div>", unsafe_allow_html=True)  # .card
+st.markdown("</div>", unsafe_allow_html=True)  # .section
+
+
+# =========================
 # CTA: Save first, then show Open Ventura (as a real button)
 # =========================
 if "save_guard" not in st.session_state:
