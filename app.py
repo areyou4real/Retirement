@@ -20,18 +20,31 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-/* Remove ALL top margin/padding from the Streamlit container */
-main .block-container {
-    padding-top: 0rem !important;
+/* Remove Streamlit header & toolbar entirely (no reserved space) */
+header[data-testid="stHeader"] { display: none !important; }
+div[data-testid="stToolbar"]   { display: none !important; }
+
+/* Eliminate top padding/margin from app containers */
+html, body, #root,
+div.stApp,
+section.main,
+div.block-container,
+main .block-container,
+.stAppViewContainer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
-/* Remove default body/html margin (browser side) */
-html, body {
-    margin: 0 !important;
-    padding: 0 !important;
+/* If you're on mobile with a notch, also neutralize safe-area inset */
+@supports(padding: max(0px)) {
+  body { padding-top: 0 !important; }
 }
+
+/* (Optional) keep footer hidden too */
+footer { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # One-time redirect guard (harmless)
