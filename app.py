@@ -808,6 +808,9 @@ with bcol1:
         key="cta_save",
         disabled=st.session_state.save_guard or st.session_state.save_done,
     )
+    # 👇 Persistent caption immediately under the button (only after success)
+    if st.session_state.save_done:
+        st.caption("A representative will reach out to you shortly.")
 
 with bcol2:
     if st.session_state.save_done:
@@ -818,6 +821,7 @@ with bcol2:
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
+
 
 # Handle SAVE click (debounced)
 if save_clicked and not st.session_state.save_guard and not st.session_state.save_done:
@@ -848,11 +852,11 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     if write_ok:
         st.session_state.save_done = True
         st.success("Success.")
-        st.caption("A representative will reach out to you shortly.")
-        st.rerun()
+        st.rerun()  # triggers re-render where caption now appears under the button
     else:
         st.error("Please try again later")
         st.session_state.save_guard = False
+
 
 # Sticky Summary
 st.markdown(
@@ -871,6 +875,7 @@ st.markdown(
 # Version label + fixed-rate captions at the bottom
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
+st.caption("For any further queries please contatc us at mfcustomercare@venturasecurities.com or +91 226754 7042")
 st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5</div>", unsafe_allow_html=True)
 st.caption("DISCLAIMER: Ventura Securities Ltd. (Ventura) is a Stock Broker / Research Analyst / Portfolio Manager / Depository Participant duly registered with SEBI  and is also a Mutual Fund Distributor registered with the Association of Mutual Funds in India (AMFI) holding ARN No. 20936. Ventura provides incidental advice pertaining to Mutual Funds and their appropriateness and suitability. Ventura receives remuneration by way of commission from the Mutual Funds. All Mutual Funds are subject to market risks and you are requested to read all Scheme related documents carefully before investing. Past performance is not indicative of future returns . Nothing contained in this communication should be construed as an investment advice or recommendation to buy / sell / hold any investment product. You must determine on your own behalf, the merits and risks of any other investment product as well as its suitability for you.")
 
