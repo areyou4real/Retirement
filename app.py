@@ -648,19 +648,15 @@ a1, a2, a3 = st.columns(3)
 with a1:
     st.markdown(
         """
-        <div style='
-            background: var(--card); 
-            border: 1px solid var(--ring); 
-            border-radius: 14px; 
-            padding: 16px; 
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 20px;'>
-            
-            <h3 style='color:#e63946; font-weight:700; margin:0;'> "Pick one Monthly SIP / Lumpsum Today" </h3>
+        <div class='kpi'>
+          <div class='label'>Pick one</div>
+          <div class='value' style='color:#e63946; font-weight:800;'>
+            Monthly SIP / Lumpsum Today
+          </div>
+          <div class='sub'>&nbsp;</div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 with a2:
     st.markdown(
