@@ -649,7 +649,7 @@ with a1:
     st.markdown(
         """
         <div class='kpi'>
-          <div class='label'>Pick one</div>
+          <div class='label' style='font-weight:700;'>Pick one</div>
           <div class='value' style='color:#e63946; font-weight:800;'>
             Monthly SIP / Lumpsum Today
           </div>
