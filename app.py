@@ -45,8 +45,6 @@ footer { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
-
-
 # One-time redirect guard (harmless)
 if st.session_state.get("_redirect_once"):
     st.session_state["_redirect_once"] = False
@@ -97,7 +95,7 @@ def inject_css():
 
           /* Row-3 animation */
           .kpi.row3{ transition:all .28s ease; }
-          .kpi.row3.hidden{ max-height:0; opacity:0; margin:0!important; padding-top:0!important; padding-bottom:0!important; border-width:0!important; min-height:0!important; height:0!important; overflow:hidden; }
+          .kpi.row3.hidden{ max-height:0; opacity:0; margin:0!important; padding-top:0!important; padding-bottom:0!important; border-width:0!important; min-height:0!important; height:0!important; overflow:hidden!important; }
           .kpi.row3.show{ opacity:1; transform:translateY(0); }
           .kpi.row3.ghost{ visibility:hidden; }
 
@@ -118,7 +116,7 @@ def inject_css():
             font-family:'Space Grotesk','Plus Jakarta Sans',system-ui,sans-serif!important; font-weight:500; letter-spacing:.2px;
           }
           .stNumberInput input:hover, .stTextInput input:hover, textarea:hover{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
-          .stNumberInput input:focus, .stTextInput input:focus, textarea:focus{ border-color:var(--accent)!important; box-shadow:0 0 0 3px rgba(37,99,235,.25)!important; }
+          .stNumberInput input:focus, .stTextInput input:focus{ border-color:var(--accent)!important; box-shadow:0 0 0 3px rgba(37,99,235,.25)!important; }
 
           /* Sticky summary bar */
           .sticky-summary{ position:sticky; bottom:0; z-index:100; background:var(--card-2); border-top:1px solid var(--ring); padding:8px 12px; border-radius:12px 12px 0 0; max-width:760px; margin:0 auto; transition:.25s; }
@@ -190,8 +188,6 @@ def show_logo_top(path: str = "ventura.png", height: int = 80):
         unsafe_allow_html=True,
     )
 
-
-
 # =========================
 # Google Sheets helpers
 # =========================
@@ -236,6 +232,33 @@ def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
         return _append_row_with_retry(ws, row)
     except Exception as e:
         st.error(f"Could not prepare final snapshot write: {e}")
+        return False
+
+# ---------- NEW: Update latest SIGNIN row for a user (by original email) ----------
+def update_latest_signin_row(old_email: str, new_first: str, new_last: str, new_email: str, new_phone: str) -> bool:
+    """
+    Find the most recent SIGNIN row for old_email and update columns:
+      B: First name, C: Last name, D: Email, E: Phone
+    Returns True on success, False otherwise.
+    """
+    try:
+        ws = get_ws()
+        data = ws.get_all_values()  # [[A,B,C,D,E,F,...], ...]
+        target_rownum = None
+        for idx in range(len(data) - 1, -1, -1):  # search bottom-up
+            row = data[idx]
+            if len(row) >= 6:
+                email_cell = row[3].strip().lower()
+                tag_cell = row[5].strip().upper()
+                if email_cell == (old_email or "").strip().lower() and tag_cell == "SIGNIN":
+                    target_rownum = idx + 1  # gspread rows are 1-based
+                    break
+        if target_rownum:
+            ws.update(f"B{target_rownum}:E{target_rownum}", [[new_first.strip(), new_last.strip(), new_email.strip(), new_phone.strip()]])
+            return True
+        return False
+    except Exception as e:
+        st.error(f"Could not update sign-in row: {e}")
         return False
 
 # =========================
@@ -355,7 +378,7 @@ st_html("""
     // Sanitize paste / drag-drop / programmatic changes
     const clean = () => {
       const v = el.value || '';
-      const digits = v.replace(/\\D+/g,'');
+      const digits = v.replace(/\D+/g,'');
       if (v !== digits) el.value = digits;
     };
     el.addEventListener('input', clean);
@@ -420,7 +443,7 @@ if not st.session_state.signed_in:
         ph = (phone      or "").strip()
 
         # Phone: digits only and >= 9 digits
-        ph_digits = re.sub(r"\\D+", "", ph)
+        ph_digits = re.sub(r"\D+", "", ph)
         phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
 
         # Email: simple check → must contain "@"
@@ -441,6 +464,9 @@ if not st.session_state.signed_in:
                 st.session_state.user_last_name  = ln
                 st.session_state.user_email      = em
                 st.session_state.user_phone      = ph_digits
+                # NEW: remember the original email used at sign-in for future sheet updates
+                st.session_state.signin_email_at_login = em
+
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
             else:
@@ -793,7 +819,6 @@ st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 # =========================
 # Review & Edit Contact Details (before CTA)
 # =========================
-
 with st.expander("Review your contact details"):
     with st.form("edit_contact_form", clear_on_submit=False):
         ec1, ec2 = st.columns(2)
@@ -835,13 +860,27 @@ with st.expander("Review your contact details"):
             st.session_state.user_last_name  = ln
             st.session_state.user_email      = em
             st.session_state.user_phone      = ph_digits
+
+            # NEW: also update the original SIGNIN row in Google Sheet
+            old_email_for_lookup = st.session_state.get("signin_email_at_login", st.session_state.get("user_email",""))
+            updated = update_latest_signin_row(
+                old_email=old_email_for_lookup,
+                new_first=fn,
+                new_last=ln,
+                new_email=em,
+                new_phone=ph_digits,
+            )
+            if updated:
+                # If email changed, update the lookup key for future edits
+                st.session_state.signin_email_at_login = em
+            else:
+                st.warning("Details updated locally, but the original sign-in row could not be updated in the sheet.")
+
             st.success("Details updated. These will be used when you proceed.")
-            # Optional: refresh the summary above to reflect new values
             st.rerun()
 
 st.markdown("</div>", unsafe_allow_html=True)  # .card
 st.markdown("</div>", unsafe_allow_html=True)  # .section
-
 
 # =========================
 # CTA: Save first, then show Open Ventura (as a real button)
@@ -874,7 +913,6 @@ with bcol2:
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
-
 
 # Handle SAVE click (debounced)
 if save_clicked and not st.session_state.save_guard and not st.session_state.save_done:
@@ -909,7 +947,6 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     else:
         st.error("Please try again later")
         st.session_state.save_guard = False
-
 
 # Sticky Summary
 st.markdown(
