@@ -848,6 +848,7 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     if write_ok:
         st.session_state.save_done = True
         st.success("Success.")
+        st.caption("A representative will reach out to you shortly.")
         st.rerun()
     else:
         st.error("Please try again later")
