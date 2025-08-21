@@ -132,19 +132,35 @@ def inject_css():
 
 inject_css()
 
-def show_logo(src: str = "ventura.png", height: int = 80):
+import base64, mimetypes
+from pathlib import Path
+
+# --- Put this near your other helpers ---
+@st.cache_data
+def _data_uri(path: str) -> str:
+    p = Path(path)
+    if not p.exists():
+        return ""  # fail gracefully
+    mime = mimetypes.guess_type(p.name)[0] or "image/png"
+    return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode("utf-8")
+
+def show_logo_top(path: str = "ventura.png", height: int = 80):
+    src = _data_uri(path)
+    if not src:
+        return
     st.markdown(
         f"""
-        <div style="
-            text-align:center;
-            margin-top:-40px;   /* pull upwards if you want it flush */
-            margin-bottom:20px;
-        ">
-            <img src="{src}" style="height:{height}px; max-width:100%; object-fit:contain;" alt="Logo"/>
+        <style>
+          /* Nuke default top padding so logo touches (or nearly) the top */
+          main .block-container {{ padding-top: 6px; }}
+        </style>
+        <div style="display:flex; justify-content:center; margin:4px 0 16px 0;">
+          <img src="{src}" alt="Logo" style="height:{height}px; max-width:100%; object-fit:contain;" />
         </div>
         """,
         unsafe_allow_html=True,
     )
+
 
 
 # =========================
@@ -333,7 +349,7 @@ st_html("""
 """, height=0)
 
 if not st.session_state.signed_in:
-    show_logo("logo.png", height=80)
+    show_logo_top("ventura.png", height=80)
     st.markdown("""
         <div class='hero'>
           <div class='title'>Welcome</div>
