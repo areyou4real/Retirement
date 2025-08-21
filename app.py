@@ -509,24 +509,38 @@ with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
 
     # Row 1
-    r1c1, r1c2, r1c3 = st.columns(3)
     with r1c1:
-        age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
+    age_now = st.number_input(
+        "Current age", 
+        min_value=16, 
+        max_value=70, 
+        value=25, 
+        step=1
+    )
     with r1c2:
-        min_retire_age = age_now + 5
-        hard_max_retire = 70
-        max_retire_age = max(min_retire_age, hard_max_retire)
-        default_retire_age = min(max(60, min_retire_age), max_retire_age)
-        age_retire = st.number_input("Target retirement age", min_value=min_retire_age, max_value=max_retire_age, value=default_retire_age, step=1)
+    min_retire_age = age_now + 5  # enforce gap
+    age_retire = st.number_input(
+        "Target retirement age",
+        min_value=min_retire_age,
+        max_value=70,
+        value=max(60, min_retire_age),  # default ensures it's valid
+        step=1
+    )
     with r1c3:
-        min_life_exp = age_retire + 1
-        hard_max_life = 110
-        max_life_exp = max(min_life_exp, hard_max_life)
-        default_life = min(max(90, min_life_exp), max_life_exp)
-        life_expectancy = st.number_input("Life expectancy", min_value=max(0, min_life_exp), max_value=max_life_exp, value=default_life, step=1)
-
-    years_left = max(0, age_retire - age_now)
-    st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
+    min_life_exp = age_retire + 1
+    life_expectancy = st.number_input(
+        "Life expectancy",
+        min_value=min_life_exp,
+        max_value=110,
+        value=max(90, min_life_exp),
+        step=1
+    )
+    # Derived values
+    years_left = max(0, int(age_retire) - int(age_now))
+    st.caption(
+    f"Years to retirement: **{years_left}** • "
+    f"Years after retirement: **{max(life_expectancy - int(age_retire), 0)}**"
+    )
 
     # Row 2
     r2c1, r2c2, r2c3 = st.columns(3)
