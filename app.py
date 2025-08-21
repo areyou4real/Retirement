@@ -657,9 +657,7 @@ with a1:
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 20px;'>
             
-            <h3 style='color:#e63946; font-weight:700; margin:0;'>
-                Pick one Monthly SIP / Lumpsum Today
-            </h3>
+            <h3 style='color:#e63946; font-weight:700; margin:0;'> Pick one Monthly SIP / Lumpsum Today </h3>
         </div>
         """,
         unsafe_allow_html=True
