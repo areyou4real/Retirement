@@ -152,7 +152,7 @@ def show_logo_top(path: str = "ventura.png", height: int = 50):
         f"""
         <style>
           /* Nuke default top padding so logo touches (or nearly) the top */
-          main .block-container {{ padding-top: 6px; }}
+          main .block-container {{ padding-top: 1px; }}
         </style>
         <div style="display:flex; justify-content:center; margin:4px 0 16px 0;">
           <img src="{src}" alt="Logo" style="height:{height}px; max-width:100%; object-fit:contain;" />
