@@ -399,7 +399,6 @@ if not st.session_state.signed_in:
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
     st.markdown("<div class='section'>", unsafe_allow_html=True)
-    st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
 
     with st.form("signin_form", clear_on_submit=False):
         c1, c2 = st.columns(2)
