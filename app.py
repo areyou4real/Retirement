@@ -647,7 +647,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 a1, a2, a3 = st.columns(3)
 with a1:
     st.markdown(
-    "<h3 style='color:#e63946; font-weight:700; text-align:center;'>"
+    "<h3 style='color:#e63946; font-weight:7000; text-align:center;'>"
     "Pick one Monthly SIP / Lumpsum Today"
     "</h3>", 
     unsafe_allow_html=True
