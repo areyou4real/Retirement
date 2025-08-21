@@ -291,37 +291,35 @@ def number_to_words_short(n: float) -> str:
 # =========================
 # SIMPLE SIGN-IN GATE (Autofill-Hardened)
 # =========================
+# =========================
+# SIMPLE SIGN-IN GATE (Autofill-Hardened + Phone & Email Validation)
+# =========================
+import re  # for email validation
+
 if "signed_in" not in st.session_state:
     st.session_state.signed_in = False
 
-# One-time stable seed so keys don't change on reruns (prevents input loss)
+# Stable per-session seed for keys (prevents input loss across reruns)
 if "af_seed" not in st.session_state:
     st.session_state.af_seed = int(time.time() * 1e6) % 10**9
 
-def _af_key(s):
-    # Obfuscated keys: avoid common names like 'email', 'phone' to reduce autofill triggers
+def _af_key(s: str) -> str:
+    # Obfuscated keys: avoid common tokens like 'email'/'phone' to reduce autofill triggers
     return f"{s}_{st.session_state.af_seed}"
 
-# Inject anti-autofill CSS + hidden decoy inputs (many browsers dump autofill into the first seen username/password)
+# ---- Anti-autofill CSS (keep visuals consistent if browser injects styles) ----
 st.markdown("""
 <style>
-/* Neutralize webkit autofill background & text color flicker */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--text) !important;
   transition: background-color 9999s ease-in-out 0s;
 }
-
-/* Ensure Streamlit inputs advertise 'off' even if browser ignores it */
-input { caret-color: auto; }
-
-/* Hide Streamlit chrome here as before (optional—move if you already do this elsewhere) */
-#MainMenu, footer, header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
-# Decoy fields to soak up autofill (placed off-screen)
+# ---- Decoy fields to soak password managers (off-screen) ----
 st_html("""
 <div style="position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden;">
   <input type="text" name="username" autocomplete="username">
@@ -329,20 +327,39 @@ st_html("""
 </div>
 """, height=0)
 
-# JS hardening: set attributes on all real inputs (within our app container)
+# ---- JS hardening: disable autofill, set types/patterns for phone/email, randomize names ----
 st_html("""
 <script>
 (function(){
   const doc = window.parent?.document || document;
   const inputs = doc.querySelectorAll('input');
+
   inputs.forEach(el => {
+    // Disable browser autofill & helpers globally
     el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');
     el.setAttribute('autocapitalize','none');
     el.setAttribute('spellcheck','false');
-    // Prevent password managers from guessing
-    if (!/email|phone|tel|name|password/i.test(el.name || '')) {
+
+    // Randomize name to defeat autofill heuristics (but keep it stable per render)
+    if (!el.dataset.randnameApplied) {
       el.name = (el.name || 'f') + '_' + Math.random().toString(36).slice(2,9);
+      el.dataset.randnameApplied = "1";
+    }
+
+    // Phone field detection by placeholder pattern from our UI
+    if (el.placeholder && el.placeholder.includes("98xx-xxxxxx")) {
+      el.setAttribute('type','tel');
+      el.setAttribute('inputmode','numeric');
+      el.setAttribute('pattern','[0-9]{9,}'); // at least 9 digits
+    }
+
+    // Email field detection by placeholder pattern from our UI
+    if (el.placeholder && el.placeholder.includes("@example.com")) {
+      el.setAttribute('type','email');
+      el.setAttribute('inputmode','email');
+      // Simple but effective email pattern (frontend hint; backend will validate too)
+      el.setAttribute('pattern','^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
     }
   });
 })();
@@ -361,7 +378,7 @@ if not st.session_state.signed_in:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
 
-    # Use a form so browsers are less eager to inject per-field suggestions, and we get a single submit event
+    # Use a form (single submit) – keeps your layout intact
     with st.form("signin_form", clear_on_submit=False):
         c1, c2 = st.columns(2)
         with c1:
@@ -371,13 +388,15 @@ if not st.session_state.signed_in:
 
         c3, c4 = st.columns(2)
         with c3:
-            # Keep label generic; avoid 'Email' exact match to reduce autofill heuristics
-            email = st.text_input("Contact email", key=_af_key("em"),
+            # Keep label generic; placeholder used by JS to tag as email field
+            email = st.text_input("Contact email",
+                                  key=_af_key("em"),
                                   placeholder="name@example.com",
                                   help="We’ll only use this to save your plan.")
         with c4:
-            # Use phone-friendly hint without 'phone' token
-            phone = st.text_input("Mobile number", key=_af_key("ph"),
+            # Placeholder used by JS to tag as phone field
+            phone = st.text_input("Mobile number",
+                                  key=_af_key("ph"),
                                   placeholder="+91 98xx-xxxxxx")
 
         submitted = st.form_submit_button("Sign in & continue", type="primary")
@@ -386,22 +405,36 @@ if not st.session_state.signed_in:
     st.markdown("</div>", unsafe_allow_html=True)  # .section
 
     if submitted:
-        # Minimal validation (kept simple to avoid false positives)
-        if not first_name or not last_name or not email or not phone:
-            st.warning("Please fill First name, Last name, Email, and Mobile number.")
+        # ---- Backend validation (authoritative) ----
+        fn = (first_name or "").strip()
+        ln = (last_name  or "").strip()
+        em = (email      or "").strip()
+        ph = (phone      or "").strip().replace(" ", "").replace("-", "")
+
+        # Phone: digits only, length >= 9 (i.e., "more than 8 digits")
+        phone_ok = ph.isdigit() and len(ph) >= 9
+
+        # Email: lightweight regex (covers most real-world addresses)
+        email_ok = bool(re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", em))
+
+        if not fn or not ln or not em or not ph:
+            st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
+        elif not phone_ok:
+            st.warning("Mobile number must contain only digits and be at least 9 digits long.")
+        elif not email_ok:
+            st.warning("Please enter a valid email address (e.g., name@example.com).")
         else:
-            ok = append_signin_to_gsheet(first_name, last_name, email, phone)
+            ok = append_signin_to_gsheet(fn, ln, em, ph)
             if ok:
                 st.session_state.signed_in = True
-                st.session_state.user_first_name = first_name.strip()
-                st.session_state.user_last_name  = last_name.strip()
-                st.session_state.user_email      = email.strip()
-                st.session_state.user_phone      = phone.strip()
+                st.session_state.user_first_name = fn
+                st.session_state.user_last_name  = ln
+                st.session_state.user_email      = em
+                st.session_state.user_phone      = ph
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
             else:
                 st.error("Could not save your sign-in. Please try again.")
-           
 
     st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
     hide_all = """
