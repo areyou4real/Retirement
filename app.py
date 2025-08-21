@@ -132,7 +132,7 @@ def inject_css():
 
 inject_css()
 
-def show_logo(src: str = "ventura.png", width: int = 140):
+def show_logo(src: str = "ventura.png", width: int = 240):
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.image(src, width=width)
