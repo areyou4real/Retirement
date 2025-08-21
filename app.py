@@ -152,6 +152,14 @@ def inject_css():
           div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{ margin-top:0!important; }
           .element-container:has(> iframe.stIFrame){ margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important; }
 
+          .highlight-label {
+          font-size: 1.2rem !important;   /* bigger font */
+          font-weight: 700 !important;    /* bold */
+          color: #007BFF !important;      /* bootstrap blue (change as you like) */
+          margin-bottom: 0.5rem;
+          display: block;
+          }
+
         </style>
         """,
         unsafe_allow_html=True,
