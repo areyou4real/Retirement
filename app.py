@@ -132,10 +132,20 @@ def inject_css():
 
 inject_css()
 
-def show_logo(src: str = "ventura.png", width: int = 240):
-    c1, c2, c3 = st.columns([1, 2, 1])
-    with c2:
-        st.image(src, width=width)
+def show_logo(src: str = "ventura.png", height: int = 80):
+    st.markdown(
+        f"""
+        <div style="
+            text-align:center;
+            margin-top:-40px;   /* pull upwards if you want it flush */
+            margin-bottom:20px;
+        ">
+            <img src="{src}" style="height:{height}px; max-width:100%; object-fit:contain;" alt="Logo"/>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # =========================
 # Google Sheets helpers
