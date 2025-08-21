@@ -18,6 +18,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+st.markdown("""
+<style>
+/* Remove ALL top margin/padding from the Streamlit container */
+main .block-container {
+    padding-top: 0rem !important;
+}
+
+/* Remove default body/html margin (browser side) */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # One-time redirect guard (harmless)
 if st.session_state.get("_redirect_once"):
     st.session_state["_redirect_once"] = False
