@@ -647,13 +647,11 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 a1, a2, a3 = st.columns(3)
 with a1:
     st.markdown(
-        "<div class='kpi'>"
-        "<div class='label'>Pick one</div>"
-        "<div class='value'>Monthly SIP / Lumpsum Today</div>"
-        "<div class='sub'>&nbsp;</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    "<h3 style='color:#e63946; font-weight:700; text-align:center;'>"
+    "Pick one Monthly SIP / Lumpsum Today"
+    "</h3>", 
+    unsafe_allow_html=True
+)
 with a2:
     st.markdown(
         f"<div class='kpi'>"
