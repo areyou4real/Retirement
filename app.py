@@ -125,84 +125,12 @@ def inject_css():
           div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{ margin-top:0!important; }
           .element-container:has(> iframe.stIFrame){ margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important; }
 
-          /* ---- Edge bounce animation ---- */
-          @keyframes pageBounceDown {
-          0% { transform: translateY(0); }
-          60% { transform: translateY(14px); }
-          100% { transform: translateY(0); }
-          }
-          @keyframes pageBounceUp {
-          0% { transform: translateY(0); }
-          60% { transform: translateY(-14px); }
-          100% { transform: translateY(0); }
-          }
-          /* Apply the animation on the main viewport container (safe in Streamlit) */
-          html.edge-bounce-top body > div:first-child,
-          html.edge-bounce-top .main,
-          html.edge-bounce-top .block-container {
-          animation: pageBounceDown 420ms cubic-bezier(.2,.8,.2,1);
-          }
-          html.edge-bounce-bottom body > div:first-child,
-          html.edge-bounce-bottom .main,
-          html.edge-bounce-bottom .block-container {
-          animation: pageBounceUp 420ms cubic-bezier(.2,.8,.2,1);
-          }
-          /* Make scrolling feel snappier and prevent scroll chaining artifacts */
-          html, body { overscroll-behavior-y: contain; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 inject_css()
-
-from streamlit.components.v1 import html as st_html
-
-st_html("""
-<script>
-(function(){
-  // use the root scrolling element
-  const root = document.scrollingElement || document.documentElement;
-  let lastBounce = 0;
-  const cooldown = 500; // ms to avoid spam
-
-  function bounce(dir){ // dir: 'top' or 'bottom'
-    const now = Date.now();
-    if (now - lastBounce < cooldown) return;
-    lastBounce = now;
-    const html = document.documentElement;
-    const cls = dir === 'top' ? 'edge-bounce-top' : 'edge-bounce-bottom';
-    html.classList.add(cls);
-    setTimeout(()=> html.classList.remove(cls), 450);
-  }
-
-  // Wheel (mouse/trackpad)
-  window.addEventListener('wheel', (e) => {
-    const atTop = root.scrollTop <= 0;
-    const atBottom = Math.ceil(root.scrollTop + root.clientHeight) >= root.scrollHeight;
-    if (e.deltaY < 0 && atTop) bounce('top');
-    if (e.deltaY > 0 && atBottom) bounce('bottom');
-  }, { passive: true });
-
-  // Touch (mobile)
-  let startY = null;
-  window.addEventListener('touchstart', (e) => {
-    startY = e.touches && e.touches.length ? e.touches[0].clientY : null;
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (startY == null) return;
-    const y = e.touches && e.touches.length ? e.touches[0].clientY : startY;
-    const dy = y - startY; // positive = pulling down
-    const atTop = root.scrollTop <= 0;
-    const atBottom = Math.ceil(root.scrollTop + root.clientHeight) >= root.scrollHeight;
-    if (dy > 0 && atTop) bounce('top');
-    if (dy < 0 && atBottom) bounce('bottom');
-  }, { passive: true });
-})();
-</script>
-""", height=0)
-
 
 # =========================
 # Google Sheets helpers
