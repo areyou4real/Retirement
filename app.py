@@ -289,25 +289,21 @@ def number_to_words_short(n: float) -> str:
     return f"{absn:.0f}"
 
 # =========================
-# SIMPLE SIGN-IN GATE (Autofill-Hardened)
+# SIMPLE SIGN-IN GATE (Autofill-Hardened + Strict Numeric Phone + Email/Phone Validation)
 # =========================
-# =========================
-# SIMPLE SIGN-IN GATE (Autofill-Hardened + Phone & Email Validation)
-# =========================
-import re  # for email validation
+import re, time
 
 if "signed_in" not in st.session_state:
     st.session_state.signed_in = False
 
-# Stable per-session seed for keys (prevents input loss across reruns)
+# Stable seed so Streamlit keys don't change on reruns
 if "af_seed" not in st.session_state:
     st.session_state.af_seed = int(time.time() * 1e6) % 10**9
 
 def _af_key(s: str) -> str:
-    # Obfuscated keys: avoid common tokens like 'email'/'phone' to reduce autofill triggers
     return f"{s}_{st.session_state.af_seed}"
 
-# ---- Anti-autofill CSS (keep visuals consistent if browser injects styles) ----
+# ---- Anti-autofill CSS (keep visuals stable if browser tries to style autofill) ----
 st.markdown("""
 <style>
 input:-webkit-autofill,
@@ -319,7 +315,7 @@ input:-webkit-autofill:focus {
 </style>
 """, unsafe_allow_html=True)
 
-# ---- Decoy fields to soak password managers (off-screen) ----
+# ---- Decoy username/password inputs (off-screen) to absorb password managers ----
 st_html("""
 <div style="position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden;">
   <input type="text" name="username" autocomplete="username">
@@ -327,41 +323,71 @@ st_html("""
 </div>
 """, height=0)
 
-# ---- JS hardening: disable autofill, set types/patterns for phone/email, randomize names ----
+# ---- JS hardening + STRICT numeric-only phone input ----
 st_html("""
 <script>
 (function(){
   const doc = window.parent?.document || document;
-  const inputs = doc.querySelectorAll('input');
 
+  // global autofill hardening
+  const inputs = doc.querySelectorAll('input');
   inputs.forEach(el => {
-    // Disable browser autofill & helpers globally
     el.setAttribute('autocomplete','off');
     el.setAttribute('autocorrect','off');
     el.setAttribute('autocapitalize','none');
     el.setAttribute('spellcheck','false');
-
-    // Randomize name to defeat autofill heuristics (but keep it stable per render)
     if (!el.dataset.randnameApplied) {
       el.name = (el.name || 'f') + '_' + Math.random().toString(36).slice(2,9);
       el.dataset.randnameApplied = "1";
     }
-
-    // Phone field detection by placeholder pattern from our UI
-    if (el.placeholder && el.placeholder.includes("98xx-xxxxxx")) {
-      el.setAttribute('type','tel');
-      el.setAttribute('inputmode','numeric');
-      el.setAttribute('pattern','[0-9]{9,}'); // at least 9 digits
-    }
-
-    // Email field detection by placeholder pattern from our UI
-    if (el.placeholder && el.placeholder.includes("@example.com")) {
-      el.setAttribute('type','email');
-      el.setAttribute('inputmode','email');
-      // Simple but effective email pattern (frontend hint; backend will validate too)
-      el.setAttribute('pattern','^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
-    }
   });
+
+  // helper: attach strict numeric-only behavior to an input element
+  function enforceDigitsOnly(el, minLen=9) {
+    if (!el || el.dataset.enforceDigits) return;
+    el.dataset.enforceDigits = "1";
+    el.setAttribute('type','tel');
+    el.setAttribute('inputmode','numeric');
+    el.setAttribute('pattern', '[0-9]{' + minLen + ',}');
+
+    const allowedControl = new Set([
+      'Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
+      'Home','End','Tab'
+    ]);
+
+    // Block non-digit keypresses
+    el.addEventListener('keydown', (e) => {
+      // Allow shortcuts (Ctrl/Cmd + A/C/V/X/Z/Y)
+      if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z','y'].includes(e.key.toLowerCase())) return;
+
+      if (allowedControl.has(e.key)) return;
+      if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
+        e.preventDefault();
+      }
+    });
+
+    // Sanitize paste / drag-drop / programmatic changes
+    const clean = () => {
+      const v = el.value || '';
+      const digits = v.replace(/\\D+/g,'');
+      if (v !== digits) el.value = digits;
+    };
+    el.addEventListener('input', clean);
+    el.addEventListener('paste', (e) => { setTimeout(clean, 0); });
+    el.addEventListener('drop',  (e) => { setTimeout(clean, 0); });
+  }
+
+  // Identify phone & email by placeholder (as set in Python)
+  const all = Array.from(inputs);
+  const phone = all.find(el => (el.placeholder || '').includes('98xx-xxxxxx'));
+  const email = all.find(el => (el.placeholder || '').includes('@example.com'));
+
+  if (phone) enforceDigitsOnly(phone, 9); // at least 9 digits (i.e., > 8)
+  if (email) {
+    email.setAttribute('type','email');
+    email.setAttribute('inputmode','email');
+    email.setAttribute('pattern','^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+  }
 })();
 </script>
 """, height=0)
@@ -378,7 +404,6 @@ if not st.session_state.signed_in:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='card'><h3>Your details</h3>", unsafe_allow_html=True)
 
-    # Use a form (single submit) – keeps your layout intact
     with st.form("signin_form", clear_on_submit=False):
         c1, c2 = st.columns(2)
         with c1:
@@ -388,13 +413,12 @@ if not st.session_state.signed_in:
 
         c3, c4 = st.columns(2)
         with c3:
-            # Keep label generic; placeholder used by JS to tag as email field
             email = st.text_input("Contact email",
                                   key=_af_key("em"),
                                   placeholder="name@example.com",
                                   help="We’ll only use this to save your plan.")
         with c4:
-            # Placeholder used by JS to tag as phone field
+            # digits-only enforced via JS; backend will validate again
             phone = st.text_input("Mobile number",
                                   key=_af_key("ph"),
                                   placeholder="+91 98xx-xxxxxx")
@@ -405,17 +429,18 @@ if not st.session_state.signed_in:
     st.markdown("</div>", unsafe_allow_html=True)  # .section
 
     if submitted:
-        # ---- Backend validation (authoritative) ----
+        # Backend validation (authoritative)
         fn = (first_name or "").strip()
         ln = (last_name  or "").strip()
         em = (email      or "").strip()
-        ph = (phone      or "").strip().replace(" ", "").replace("-", "")
+        ph = (phone      or "").strip()
 
-        # Phone: digits only, length >= 9 (i.e., "more than 8 digits")
-        phone_ok = ph.isdigit() and len(ph) >= 9
+        # Phone: digits only and >= 9 digits
+        ph_digits = re.sub(r"\\D+", "", ph)
+        phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
 
-        # Email: lightweight regex (covers most real-world addresses)
-        email_ok = bool(re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$", em))
+        # Email: lightweight regex
+        email_ok = bool(re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", em))
 
         if not fn or not ln or not em or not ph:
             st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
@@ -424,13 +449,14 @@ if not st.session_state.signed_in:
         elif not email_ok:
             st.warning("Please enter a valid email address (e.g., name@example.com).")
         else:
-            ok = append_signin_to_gsheet(fn, ln, em, ph)
+            # Use the digit-only version for storage
+            ok = append_signin_to_gsheet(fn, ln, em, ph_digits)
             if ok:
                 st.session_state.signed_in = True
                 st.session_state.user_first_name = fn
                 st.session_state.user_last_name  = ln
                 st.session_state.user_email      = em
-                st.session_state.user_phone      = ph
+                st.session_state.user_phone      = ph_digits
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
             else:
