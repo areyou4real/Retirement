@@ -12,7 +12,7 @@ import time  # NEW: for backoff retries
 # App Config
 # =========================
 st.set_page_config(
-    page_title="Retirement Savings Calculator",
+    page_title="Ventura Retirement Calculator",
     page_icon="🧮",
     layout="wide",
     initial_sidebar_state="collapsed",
