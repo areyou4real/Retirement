@@ -791,79 +791,58 @@ st.session_state.prev_snap_gap = int(gap)
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
 # =========================
-# Review & Edit Contact Details (shown before CTA)
+# Review & Edit Contact Details (before CTA)
 # =========================
-if "edit_open" not in st.session_state:
-    st.session_state.edit_open = False
+st.markdown("<div class='section'>", unsafe_allow_html=True)
+st.markdown("<div class='card'><h3>Review your contact details</h3>", unsafe_allow_html=True)
 
-st.markdown("<div class='panel kpi-surface'><h3>Review your details</h3>", unsafe_allow_html=True)
-
-# Current values
-curr_fn = st.session_state.get("user_first_name", "")
-curr_ln = st.session_state.get("user_last_name", "")
-curr_em = st.session_state.get("user_email", "")
-curr_ph = st.session_state.get("user_phone", "")
-
-# Compact summary row
-c1, c2, c3, c4, c5 = st.columns([1.1, 1.1, 1.8, 1.4, 0.9])
-c1.markdown("**First name**")
-c1.write(curr_fn or "—")
-c2.markdown("**Last name**")
-c2.write(curr_ln or "—")
-c3.markdown("**Email**")
-c3.write(curr_em or "—")
-c4.markdown("**Mobile**")
-c4.write(curr_ph or "—")
-
-with c5:
-    toggle = st.button(("Done" if st.session_state.edit_open else "Edit details"), key="edit_toggle")
-
-if toggle:
-    st.session_state.edit_open = not st.session_state.edit_open
-
-# Edit form (inline)
-updated = False
-if st.session_state.edit_open:
+with st.expander("Edit details"):
     with st.form("edit_contact_form", clear_on_submit=False):
-        e1, e2 = st.columns(2)
-        with e1:
-            new_fn = st.text_input("First name", value=curr_fn)
-        with e2:
-            new_ln = st.text_input("Last name", value=curr_ln)
+        ec1, ec2 = st.columns(2)
+        with ec1:
+            edit_fn = st.text_input("First name", value=st.session_state.get("user_first_name",""))
+        with ec2:
+            edit_ln = st.text_input("Last name", value=st.session_state.get("user_last_name",""))
 
-        e3, e4 = st.columns(2)
-        with e3:
-            new_em = st.text_input("Contact email", value=curr_em, help="Must contain '@'.")
-        with e4:
-            new_ph = st.text_input("Mobile number (digits only)", value=str(curr_ph))
+        ec3, ec4 = st.columns(2)
+        with ec3:
+            # Keep browser conveniences; backend will only check '@'
+            edit_em = st.text_input("Contact email", value=st.session_state.get("user_email",""), placeholder="name@example.com")
+        with ec4:
+            # JS (already injected earlier) will enforce digits-only on placeholders with '98xx-xxxxxx'
+            edit_ph = st.text_input("Mobile number", value=st.session_state.get("user_phone",""), placeholder="+91 98xx-xxxxxx")
 
-        submit_edit = st.form_submit_button("Save changes", type="primary")
+        save_edits = st.form_submit_button("Save changes", type="primary")
 
-    if submit_edit:
+    if save_edits:
+        # --- Same validation policy as your sign-in page ---
         import re
-        # simple email rule: must contain '@'
-        email_ok = "@" in (new_em or "")
-        # phone: digits only, >= 9 digits
-        ph_digits = re.sub(r"\D+", "", new_ph or "")
+        fn = (edit_fn or "").strip()
+        ln = (edit_ln or "").strip()
+        em = (edit_em or "").strip()
+        ph = (edit_ph or "").strip()
+        ph_digits = re.sub(r"\D+", "", ph)
         phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
+        email_ok = ("@" in em)
 
-        if not new_fn or not new_ln or not new_em or not new_ph:
-            st.warning("Please fill all fields.")
-        elif not email_ok:
-            st.warning("Please enter a valid email address (must contain '@').")
+        if not fn or not ln or not em or not ph:
+            st.warning("Please fill First name, Last name, Contact email, and Mobile number.")
         elif not phone_ok:
             st.warning("Mobile number must contain only digits and be at least 9 digits long.")
+        elif not email_ok:
+            st.warning("Please enter a valid email address (must contain '@').")
         else:
-            # update session state used by CTA + snapshot writer
-            st.session_state.user_first_name = new_fn.strip()
-            st.session_state.user_last_name  = new_ln.strip()
-            st.session_state.user_email      = new_em.strip()
+            # Update session state (used by CTA write)
+            st.session_state.user_first_name = fn
+            st.session_state.user_last_name  = ln
+            st.session_state.user_email      = em
             st.session_state.user_phone      = ph_digits
-            updated = True
-            st.session_state.edit_open = False
-            st.success("Details updated.")
+            st.success("Details updated. These will be used when you proceed.")
+            # Optional: refresh the summary above to reflect new values
+            st.rerun()
 
-st.markdown("</div>", unsafe_allow_html=True)  # end panel
+st.markdown("</div>", unsafe_allow_html=True)  # .card
+st.markdown("</div>", unsafe_allow_html=True)  # .section
 
 
 # =========================
