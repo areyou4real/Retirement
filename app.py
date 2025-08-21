@@ -434,8 +434,8 @@ with st.container():
     with r1c1:
         age_now = st.number_input("Current age", min_value=16, max_value=80, value=25, step=1)
     with r1c2:
-        min_retire_age = age_now + 1
-        hard_max_retire = 90
+        min_retire_age = age_now + 5
+        hard_max_retire = 70
         max_retire_age = max(min_retire_age, hard_max_retire)
         default_retire_age = min(max(60, min_retire_age), max_retire_age)
         age_retire = st.number_input("Target retirement age", min_value=min_retire_age, max_value=max_retire_age, value=default_retire_age, step=1)
