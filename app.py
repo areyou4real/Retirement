@@ -490,6 +490,7 @@ if not st.session_state.signed_in:
 user_first = st.session_state.get("user_first_name", "")
 title_text = f"{user_first}'s Retirement Planner" if user_first else "Retirement Planner"
 show_logo_top("assets/ventura-logo.svg", height=30)
+st.markdown("---")
 st.markdown(f"""
     <div class='hero'>
       <div class='title'>{title_text}</div>
