@@ -410,6 +410,7 @@ st_html("""
 
 if not st.session_state.signed_in:
     show_logo_top("assets/ventura-logo.svg", height=30)
+    st.markdown("---")
     st.markdown("""
         <div class='hero'>
           <div class='title'>Welcome</div>
@@ -480,7 +481,7 @@ if not st.session_state.signed_in:
             else:
                 st.error("Could not save your sign-in. Please try again.")
 
-    st.markdown("<div style='text-align:left; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.2</div>", unsafe_allow_html=True)
     st.stop()
     
 # =====================================================================
