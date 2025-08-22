@@ -13,7 +13,7 @@ import time  # NEW: for backoff retries
 # =========================
 st.set_page_config(
     page_title="Ventura Retirement Calculator",
-    page_icon="ventura.png",
+    page_icon="ventura_logo.png",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
