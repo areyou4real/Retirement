@@ -566,7 +566,6 @@ with st.container():
         legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(legacy_goal)}")
 
-    st.caption("Taxes are not modeled in this version.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Map UI -> internal vars
@@ -1001,6 +1000,7 @@ st.markdown(
 st.markdown("---")
 st.caption("Return before retirement (% p.a.) — **fixed at 12.0%**")
 st.caption("Return after retirement (% p.a.) — **fixed at 6.0%**")
+st.caption("Taxes are not modeled in this version.")
 st.caption("For any further queries please contact us at mfcustomercare@venturasecurities.com or +91 226754 7042")
 st.caption("DISCLAIMER: Ventura Securities Ltd. (Ventura) is a Stock Broker / Research Analyst / Portfolio Manager / Depository Participant duly registered with SEBI  and is also a Mutual Fund Distributor registered with the Association of Mutual Funds in India (AMFI) holding ARN No. 20936. Ventura provides incidental advice pertaining to Mutual Funds and their appropriateness and suitability. Ventura receives remuneration by way of commission from the Mutual Funds. All Mutual Funds are subject to market risks and you are requested to read all Scheme related documents carefully before investing. Past performance is not indicative of future returns . Nothing contained in this communication should be construed as an investment advice or recommendation to buy / sell / hold any investment product. You must determine on your own behalf, the merits and risks of any other investment product as well as its suitability for you.")
 st.markdown("---")
