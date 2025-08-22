@@ -179,7 +179,7 @@ def _data_uri(path: str) -> str:
     mime = mimetypes.guess_type(p.name)[0] or "image/png"
     return f"data:{mime};base64," + base64.b64encode(p.read_bytes()).decode("utf-8")
 
-def show_logo_top(path: str = "assets/ventura-logo.svg", height: int = 80):
+def show_logo_top(path: str = "assets/ventura-logo.svg", height: int = 40):
     src = _data_uri(path)
     if not src:
         return
@@ -409,7 +409,7 @@ st_html("""
 """, height=0)
 
 if not st.session_state.signed_in:
-    show_logo_top("assets/ventura-logo.svg", height=50)
+    show_logo_top("assets/ventura-logo.svg", height=30)
     st.markdown("""
         <div class='hero'>
           <div class='title'>Welcome</div>
@@ -488,7 +488,7 @@ if not st.session_state.signed_in:
 # =====================================================================
 user_first = st.session_state.get("user_first_name", "")
 title_text = f"{user_first}'s Retirement Planner" if user_first else "Retirement Planner"
-show_logo_top("assets/ventura-logo.svg", height=80)
+show_logo_top("assets/ventura-logo.svg", height=30)
 st.markdown(f"""
     <div class='hero'>
       <div class='title'>{title_text}</div>
