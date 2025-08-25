@@ -93,12 +93,6 @@ def inject_css():
           .kpi .value{ font-size:1.35rem; font-weight:700; margin-top:2px; }
           .kpi .sub{ color:var(--muted); font-size:.85rem; }
 
-          /* Row-3 animation */
-          .kpi.row3{ transition:all .28s ease; }
-          .kpi.row3.hidden{ max-height:0; opacity:0; margin:0!important; padding-top:0!important; padding-bottom:0!important; border-width:0!important; min-height:0!important; height:0!important; overflow:hidden!important; }
-          .kpi.row3.show{ opacity:1; transform:translateY(0); }
-          .kpi.row3.ghost{ visibility:hidden; }
-
           /* Snapshot metric */
           .snap-metric{ margin:6px 0 10px; }
           .snap-metric .label{ color:var(--muted); font-size:.92rem; }
@@ -126,36 +120,19 @@ def inject_css():
           /* CTA */
           div.cta-wrap{ text-align:center; }
           div.cta-wrap button[kind="primary"]{ margin:12px auto 18px; padding:12px 24px; font-size:16px; font-weight:600; border:none; border-radius:9999px; background-color:var(--accent); color:#fff; cursor:pointer; text-align:center; transition:.25s; display:inline-block; }
-          div.cta-wrap button[kind="primary"]::before{ content:""; }
           div.cta-wrap button[kind="primary"]:hover{ background-color:var(--accent-hover); transform:scale(1.04); filter:brightness(1.06); box-shadow:0 3px 12px rgba(0,0,0,.12); }
 
           .section{ max-width:760px; margin:0 auto 10px; }
-
-          /* Old wrapper shape (iframe inside div[data-testid="stIFrame"]) – keep collapsed */
-          div[data-testid="stIFrame"]{ margin:0!important; padding:0!important; height:0!important; min-height:0!important; border:0!important; overflow:hidden!important; }
-          div[data-testid="stIFrame"] > iframe[title="st.iframe"]{ display:block!important; height:0!important; min-height:0!important; width:0!important; border:0!important; margin:0!important; padding:0!important; overflow:hidden!important; }
-          div[data-testid="stIFrame"] + div{ margin-top:0!important; }
 
           /* Panels */
           .panel{ background:var(--card); border:1px solid var(--ring); border-radius:12px; padding:14px 16px; width:100%; max-width:760px; margin:0 auto 10px; box-sizing:border-box; transition:.25s; text-align:center; }
           .panel:hover{ transform:translateY(-4px); box-shadow:0 4px 18px rgba(0,0,0,.08); }
           .panel.kpi-surface{ background:var(--card-2); }
 
-          /* === Handle CURRENT DOM where iframe is a DIRECT CHILD of stElementContainer === */
-          div[data-testid="stElementContainer"]:has(> iframe.stIFrame){
-            margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important;
-          }
-          iframe.stIFrame{
-            display:block!important; height:0!important; min-height:0!important; width:0!important; border:0!important; margin:0!important; padding:0!important; overflow:hidden!important;
-            position:absolute!important; left:-10000px!important; top:auto!important;
-          }
-          div[data-testid="stElementContainer"]:has(> iframe.stIFrame) + div[data-testid="stElementContainer"]{ margin-top:0!important; }
-          .element-container:has(> iframe.stIFrame){ margin:0!important; padding:0!important; height:0!important; min-height:0!important; line-height:0!important; }
-
           .highlight-label {
-          font-size: 1.2rem !important;   /* bigger font */
-          font-weight: 700 !important;    /* bold */
-          color: #007BFF !important;      /* bootstrap blue (change as you like) */
+          font-size: 1.2rem !important;
+          font-weight: 700 !important;
+          color: #007BFF !important;
           margin-bottom: 0.5rem;
           display: block;
           }
@@ -242,24 +219,19 @@ def append_final_snapshot_to_gsheet_minimal(row: list) -> bool:
         st.error(f"Could not prepare final snapshot write: {e}")
         return False
 
-# ---------- NEW: Update latest SIGNIN row for a user (by original email) ----------
+# ---------- Update latest SIGNIN row ----------
 def update_latest_signin_row(old_email: str, new_first: str, new_last: str, new_email: str, new_phone: str) -> bool:
-    """
-    Find the most recent SIGNIN row for old_email and update columns:
-      B: First name, C: Last name, D: Email, E: Phone
-    Returns True on success, False otherwise.
-    """
     try:
         ws = get_ws()
-        data = ws.get_all_values()  # [[A,B,C,D,E,F,...], ...]
+        data = ws.get_all_values()
         target_rownum = None
-        for idx in range(len(data) - 1, -1, -1):  # search bottom-up
+        for idx in range(len(data) - 1, -1, -1):
             row = data[idx]
             if len(row) >= 6:
                 email_cell = row[3].strip().lower()
                 tag_cell = row[5].strip().upper()
                 if email_cell == (old_email or "").strip().lower() and tag_cell == "SIGNIN":
-                    target_rownum = idx + 1  # gspread rows are 1-based
+                    target_rownum = idx + 1
                     break
         if target_rownum:
             ws.update(f"B{target_rownum}:E{target_rownum}", [[new_first.strip(), new_last.strip(), new_email.strip(), new_phone.strip()]])
@@ -374,7 +346,6 @@ st_html("""
       'Home','End','Tab'
     ]);
 
-    // Block non-digit keypresses
     el.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && ['a','c','v','x','z','y'].includes(e.key.toLowerCase())) return;
       if (allowedControl.has(e.key)) return;
@@ -383,7 +354,6 @@ st_html("""
       }
     });
 
-    // Sanitize paste / drag-drop / programmatic changes
     const clean = () => {
       const v = el.value || '';
       const digits = v.replace(/\D+/g,'');
@@ -394,7 +364,6 @@ st_html("""
     el.addEventListener('drop',  () => setTimeout(clean, 0));
   }
 
-  // Identify phone & email by placeholder (as set in Python)
   const all = Array.from(inputs);
   const phone = all.find(el => (el.placeholder || '').includes('98xx-xxxxxx'));
   const email = all.find(el => (el.placeholder || '').includes('@example.com'));
@@ -445,17 +414,13 @@ if not st.session_state.signed_in:
     st.markdown("</div>", unsafe_allow_html=True)  # .section
 
     if submitted:
-        # Backend validation (authoritative)
         fn = (first_name or "").strip()
         ln = (last_name  or "").strip()
         em = (email      or "").strip()
         ph = (phone      or "").strip()
 
-        # Phone: digits only and >= 9 digits
         ph_digits = re.sub(r"\D+", "", ph)
         phone_ok = ph_digits.isdigit() and len(ph_digits) >= 9
-
-        # Email: simple check → must contain "@"
         email_ok = "@" in em
 
         if not fn or not ln or not em or not ph:
@@ -465,7 +430,6 @@ if not st.session_state.signed_in:
         elif not email_ok:
             st.warning("Please enter a valid email address (must contain '@').")
         else:
-            # Use the digit-only version for storage
             ok = append_signin_to_gsheet(fn, ln, em, ph_digits)
             if ok:
                 st.session_state.signed_in = True
@@ -473,15 +437,13 @@ if not st.session_state.signed_in:
                 st.session_state.user_last_name  = ln
                 st.session_state.user_email      = em
                 st.session_state.user_phone      = ph_digits
-                # NEW: remember the original email used at sign-in for future sheet updates
                 st.session_state.signin_email_at_login = em
-
                 st.success("You're signed in. Loading planner…")
                 st.rerun()
             else:
                 st.error("Could not save your sign-in. Please try again.")
 
-    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5.1</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.6.0</div>", unsafe_allow_html=True)
     st.stop()
     
 # =====================================================================
@@ -513,7 +475,7 @@ def PMT(rate, nper, pv=0.0, fv=0.0, typ=0):
     g = _pow1p(rate, nper); return -(rate * (pv * g + fv)) / ((1 + rate * typ) * (g - 1))
 
 # =========================
-# INPUTS (3-per-row, robust clamping)
+# INPUTS (Row 1 & Row 2; simplified per request)
 # =========================
 with st.container():
     st.markdown("<div class='section'>", unsafe_allow_html=True)
@@ -525,48 +487,35 @@ with st.container():
     with r1c2:
         min_retire_age = age_now + 5
         age_retire = st.number_input(
-        "Target retirement age",
-        min_value=min_retire_age,
-        max_value=70,
-        value=max(60, min_retire_age),  # default ensures it's valid
-        step=1
-    )
+            "Target retirement age",
+            min_value=min_retire_age,
+            max_value=70,
+            value=max(60, min_retire_age),
+            step=1
+        )
     with r1c3:
         min_life_exp = age_retire + 1
         life_expectancy = st.number_input(
-        "Life expectancy",
-        min_value=min_life_exp,
-        max_value=110,
-        value=max(90, min_life_exp),
-        step=1
-    )
+            "Life expectancy",
+            min_value=min_life_exp,
+            max_value=110,
+            value=max(90, min_life_exp),
+            step=1
+        )
 
     years_left = max(0, age_retire - age_now)
     st.caption(f"Years to retirement: **{years_left}** • Years after retirement: **{max(life_expectancy-age_retire,0)}**")
 
-    # Row 2
+    # Row 2 (Inflation, Current investments moved up, Monthly expenses)
     r2c1, r2c2, r2c3 = st.columns(3)
     with r2c1:
         infl_pct = st.number_input("Inflation (% p.a.)", min_value=0.0, max_value=20.0, value=5.0, step=1.0)
     with r2c2:
-        st.number_input("Return on investments (% p.a.) — fixed", value=12.0, step=0.0, disabled=True, format="%.1f")
-        ret_exist_pct = 12.0
+        current_invest = st.number_input("Current investments (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
+        st.caption(f"≈ {number_to_words_short(current_invest)}")
     with r2c3:
         monthly_exp = st.number_input("Current monthly expenses (₹)", min_value=0.0, max_value=5_000_000.0, value=50_000.0, step=1_000.0, format="%.0f")
         st.caption(f"≈ {number_to_words_short(monthly_exp)}")
-
-    # Row 3
-    r3c1, r3c2, r3c3 = st.columns(3)
-    with r3c1:
-        yearly_exp = monthly_exp * 12.0
-        st.number_input("Yearly expenses (₹)", value=float(yearly_exp), step=0.0, disabled=True, format="%.0f")
-        st.caption(f"≈ {number_to_words_short(yearly_exp)}")
-    with r3c2:
-        current_invest = st.number_input("Current investments (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
-        st.caption(f"≈ {number_to_words_short(current_invest)}")
-    with r3c3:
-        legacy_goal = st.number_input("Inheritance to leave (₹)", min_value=0.0, max_value=1_000_000_000.0, value=0.0, step=10_000.0, format="%.0f")
-        st.caption(f"≈ {number_to_words_short(legacy_goal)}")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -575,11 +524,15 @@ F3, F4, F6 = age_now, age_retire, life_expectancy
 F5 = years_left
 ret_pre_pct = 12.0
 ret_post_pct = 6.0
+ret_exist_pct = 12.0  # kept internal; UI removed
 F7, F8, F9, F10 = infl_pct/100.0, ret_pre_pct/100.0, ret_post_pct/100.0, ret_exist_pct/100.0
-F11, F12, F13, F14 = monthly_exp, yearly_exp, current_invest, legacy_goal
+F11 = monthly_exp
+F12 = monthly_exp * 12.0  # Yearly expenses (computed, not shown)
+F13 = current_invest
+F14 = 0.0  # Inheritance removed from UI; keep as 0 to preserve downstream schema
 
 # =========================
-# CALCS (inheritance excluded from base SIP/Lumpsum)
+# CALCS (inheritance fixed at 0)
 # =========================
 F17 = (F9 - F7) / (1.0 + F7)
 F18 = FV(F7, (F4 - F3), 0.0, -F12, 1)
@@ -590,39 +543,35 @@ F21_raw = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F20_base, 1)
 F22_raw = PV(F8, (F4 - F3), 0.0, -F20_base, 1)
 F21_display = max(F21_raw, 0.0)
 F22_display = max(F22_raw, 0.0)
-F24 = PV(F9, (F6 - F4), 0.0, -F14, 1)
-F25 = PMT(F8 / 12.0, (F4 - F3) * 12.0, 0.0, -F24, 1)
-F26 = PMT(F8, (F4 - F3), 0.0, -F24, 1)
-F19 = F19_base + (F24 if F14 > 0 else 0.0)
+
+# No inheritance layer now
+F24 = 0.0
+F25 = 0.0
+F26 = 0.0
+
+# Final required corpus (no inheritance add-on)
+F19 = F19_base
+
 coverage = 0.0 if F19 == 0 else max(0.0, min(1.0, FV_existing_at_ret / F19))
 status_class = "ok" if coverage >= 0.85 else ("warn" if coverage >= 0.5 else "bad")
 status_text = "Strong" if status_class == "ok" else ("Moderate" if status_class == "warn" else "Low")
-total_monthly_sip = max(F21_display, 0.0) + max(F25, 0.0)
-total_lumpsum     = max(F22_display, 0.0) + max(F26, 0.0)
-show_totals = (F25 > 1e-6) or (F26 > 1e-6)
-prev_show = st.session_state.get("prev_show_totals", False)
 
 # =========================
-# KPI ROWS (aligned + animations)
+# KPI ROW (only the first row kept)
 # =========================
 if "prev_F19" not in st.session_state: st.session_state.prev_F19 = 0
 if "prev_F21" not in st.session_state: st.session_state.prev_F21 = 0
 if "prev_F22" not in st.session_state: st.session_state.prev_F22 = 0
-if "prev_F25" not in st.session_state: st.session_state.prev_F25 = 0
-if "prev_F26" not in st.session_state: st.session_state.prev_F26 = 0
-if "prev_total_monthly" not in st.session_state: st.session_state.prev_total_monthly = 0
-if "prev_total_lumpsum" not in st.session_state: st.session_state.prev_total_lumpsum = 0
 if "prev_snap_fv" not in st.session_state: st.session_state.prev_snap_fv = 0
 if "prev_snap_gap" not in st.session_state: st.session_state.prev_snap_gap = 0
 
-# Row 1
 k1, k2, k3 = st.columns(3)
 with k1:
     st.markdown(
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Base need {'+ inheritance' if F14>0 else ''}</div>"
+        f"<div class='sub'>Inflation-indexed lifetime need</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k2:
@@ -642,111 +591,7 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-
-# Row 2
-a1, a2, a3 = st.columns(3)
-with a1:
-    st.markdown(
-        """
-        <div class='kpi'>
-          <div class='label' style='font-weight:700;'>Pick one</div>
-          <div class='value' style='color:#3359d6; font-weight:800;'>
-            Monthly SIP / Lumpsum Today
-          </div>
-          <div class='sub'>&nbsp;</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with a2:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional SIP</div>"
-        f"<div id='kpi4' class='value'>{fmt_money_indian(st.session_state.get('prev_F25', 0))}</div>"
-        f"<div class='sub'>For inheritance only</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-with a3:
-    st.markdown(
-        f"<div class='kpi'>"
-        f"<div class='label'>Additional Lumpsum</div>"
-        f"<div id='kpi5' class='value'>{fmt_money_indian(st.session_state.get('prev_F26', 0))}</div>"
-        f"<div class='sub'>For inheritance only</div>"
-        f"</div>", unsafe_allow_html=True,
-    )
-
-st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-
-# Row 3 (totals)
-c0, c1, c2 = st.columns(3)
-with c0:
-    st.markdown(
-        f"<div id='row3card0' class='kpi row3 {'ghost' if show_totals else 'hidden'}'>&nbsp;</div>",
-        unsafe_allow_html=True,
-    )
-with c1:
-    st.markdown(
-        f"<div id='row3card1' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
-        f"<div class='label'>Total Monthly SIP (incl. additional)</div>"
-        f"<div id='kpi6' class='value'>{fmt_money_indian(st.session_state.get('prev_total_monthly', 0))}</div>"
-        f"<div class='sub'>Base SIP + additional</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-with c2:
-    st.markdown(
-        f"<div id='row3card2' class='kpi row3 {'show' if show_totals else 'hidden'}'>"
-        f"<div class='label'>Total Lumpsum (incl. additional)</div>"
-        f"<div id='kpi7' class='value'>{fmt_money_indian(st.session_state.get('prev_total_lumpsum', 0))}</div>"
-        f"<div class='sub'>Base lumpsum + additional</div>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-# JS toggler animation
-st_html(
-    f"""
-    <script>
-      (function(){{
-        var wantOpen = {"true" if show_totals else "false"};
-        var prevOpen = {"true" if prev_show else "false"};
-        var p  = window.parent.document.getElementById('row3card0');
-        var c1 = window.parent.document.getElementById('row3card1');
-        var c2 = window.parent.document.getElementById('row3card2');
-        if(!p || !c1 || !c2) return;
-
-        function toHidden(el) {{
-          el.classList.remove('show','ghost');
-          el.classList.add('hidden');
-        }}
-        function toShow(el) {{
-          el.classList.remove('hidden');
-          void el.offsetHeight;
-          el.classList.add('show');
-        }}
-        function toGhost(el) {{
-          el.classList.remove('hidden');
-          void el.offsetHeight;
-          el.classList.add('ghost');
-        }}
-
-        if (wantOpen) {{
-          toGhost(p);
-          toShow(c1);
-          toShow(c2);
-        }} else {{
-          toHidden(c1);
-          toHidden(c2);
-          toHidden(p);
-        }}
-      }})();
-    </script>
-    """,
-    height=0,
-)
-
-# CountUp animations
+# CountUp animations for the remaining KPIs and snapshot
 st_html(
     f"""
     <script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/2.8.0/countUp.umd.js"></script>
@@ -779,10 +624,6 @@ st_html(
         run('kpi1', {int(F19)}, {int(st.session_state.get('prev_F19', 0))});
         run('kpi2', {int(max(F21_display, 0))}, {int(st.session_state.get('prev_F21', 0))});
         run('kpi3', {int(max(F22_display, 0))}, {int(st.session_state.get('prev_F22', 0))});
-        run('kpi4', {int(max(F25, 0))}, {int(st.session_state.get('prev_F25', 0))});
-        run('kpi5', {int(max(F26, 0))}, {int(st.session_state.get('prev_F26', 0))});
-        run('kpi6', {int(max(total_monthly_sip, 0))}, {int(st.session_state.get('prev_total_monthly', 0))});
-        run('kpi7', {int(max(total_lumpsum, 0))}, {int(st.session_state.get('prev_total_lumpsum', 0))});
         run('snap1', {int(FV_existing_at_ret)}, {int(st.session_state.get('prev_snap_fv', 0))});
         run('snap2', {int(max(F20_base, 0))}, {int(st.session_state.get('prev_snap_gap', 0))});
       }})();
@@ -791,15 +632,10 @@ st_html(
     height=0,
 )
 
-# Save previous KPI values + show state
+# Save previous KPI values
 st.session_state.prev_F19 = int(F19)
 st.session_state.prev_F21 = int(max(F21_display, 0))
 st.session_state.prev_F22 = int(max(F22_display, 0))
-st.session_state.prev_F25 = int(max(F25, 0))
-st.session_state.prev_F26 = int(max(F26, 0))
-st.session_state.prev_total_monthly = int(max(total_monthly_sip, 0))
-st.session_state.prev_total_lumpsum = int(max(total_lumpsum, 0))
-st.session_state.prev_show_totals = show_totals
 
 st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
@@ -816,13 +652,13 @@ with cB:
     st.markdown("<div class='panel kpi-surface'><h3>Snapshot</h3>", unsafe_allow_html=True)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Existing corpus at retirement (future value)</div>"
-        f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.prev_snap_fv)}</div></div>",
+        f"<div id='snap1' class='value'>{fmt_money_indian(st.session_state.get('prev_snap_fv', 0))}</div></div>",
         unsafe_allow_html=True,
     )
     gap = max(F20_base, 0.0)
     st.markdown(
         f"<div class='snap-metric'><div class='label'>Gap to fund</div>"
-        f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.prev_snap_gap)}</div></div>",
+        f"<div id='snap2' class='value'>{fmt_money_indian(st.session_state.get('prev_snap_gap', 0))}</div></div>",
         unsafe_allow_html=True,
     )
     if F20_base < 0:
@@ -831,7 +667,7 @@ with cB:
            <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem;
            margin-top:10px;
            margin-bottom:10px;'>
-        You have a surplus for the required goal. Inheritance is additional.
+        You have a surplus for the required goal.
         </div>
         """,
         unsafe_allow_html=True
@@ -859,10 +695,8 @@ with st.expander("Review your contact details"):
 
         ec3, ec4 = st.columns(2)
         with ec3:
-            # Keep browser conveniences; backend will only check '@'
             edit_em = st.text_input("Contact email", value=st.session_state.get("user_email",""), placeholder="name@example.com")
         with ec4:
-            # JS (already injected earlier) will enforce digits-only on placeholders with '98xx-xxxxxx'
             edit_ph = st.text_input("Mobile number", value=st.session_state.get("user_phone",""), placeholder="+91 98xx-xxxxxx")
 
         save_edits = st.form_submit_button("Save changes", type="primary")
@@ -887,13 +721,11 @@ with st.expander("Review your contact details"):
             st.session_state.edits_saved = False
             st.warning("Please enter a valid email address (must contain '@').")
         else:
-            # Update session state (used by CTA write)
             st.session_state.user_first_name = fn
             st.session_state.user_last_name  = ln
             st.session_state.user_email      = em
             st.session_state.user_phone      = ph_digits
 
-            # Also update the original SIGNIN row in Google Sheet
             old_email_for_lookup = st.session_state.get("signin_email_at_login", st.session_state.get("user_email",""))
             updated = update_latest_signin_row(
                 old_email=old_email_for_lookup,
@@ -908,9 +740,8 @@ with st.expander("Review your contact details"):
                 st.warning("Details updated locally, but the original could not be updated.")
 
             st.session_state.edits_saved = True  # ✅ persist success
-            # no st.rerun(); let the success render persistently below
 
-# ✅ Persistent success message (always below the form/expander)
+# ✅ Persistent success message
 if st.session_state.get("edits_saved"):
     st.success("Details updated successfully.")
 
@@ -936,15 +767,12 @@ with bcol1:
         key="cta_save",
         disabled=st.session_state.save_guard or st.session_state.save_done,
     )
-    # 👇 Persistent caption immediately under the button (only after success)
     if st.session_state.save_done:
-        st.markdown("<div font-weight:800; color:var(--muted); font-size:0.85rem;'>A representative will reach out to you shortly.</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-weight:800; color:var(--muted); font-size:0.85rem;'>A representative will reach out to you shortly.</div>", unsafe_allow_html=True)
 with bcol2:
     if st.session_state.save_done:
-        # Looks exactly like a Streamlit primary button and opens in a new tab
         st.link_button("Please click here if not redirected", "https://www.venturasecurities.com/", type="primary")
     else:
-        # keep row height stable before the button appears
         st.markdown("<div style='height:44px'></div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
@@ -962,15 +790,16 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
         st.session_state.get("user_email", ""),
         st.session_state.get("user_phone", ""),
         int(F3), int(F4), int(F6),
-        float(infl_pct), 12.0,
-        float(F11), float(F12), float(F13), float(F14),
-        float(F19),
-        float(FV_existing_at_ret),
-        float(max(F20_base, 0.0)),
-        float(max(F21_display, 0.0)),
-        float(max(F22_display, 0.0)),
-        float(max(F25, 0.0)),
-        float(max(F26, 0.0)),
+        float(infl_pct), 12.0,                # keep schema: pre-ret return fixed
+        float(F11), float(F12),               # monthly, yearly (computed)
+        float(F13), float(F14),               # current invest, inheritance (0)
+        float(F19),                           # required corpus
+        float(FV_existing_at_ret),            # FV existing at retire
+        float(max(F20_base, 0.0)),            # gap
+        float(max(F21_display, 0.0)),         # base SIP
+        float(max(F22_display, 0.0)),         # base lumpsum
+        float(max(F25, 0.0)),                 # additional SIP (0)
+        float(max(F26, 0.0)),                 # additional lumpsum (0)
         float(round(coverage * 100.0, 1)),
     ]
 
@@ -978,10 +807,11 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
     if write_ok:
         st.session_state.save_done = True
         st.success("Success.")
-        st.rerun()  # triggers re-render where caption now appears under the button
+        st.rerun()
     else:
         st.error("Please try again later")
         st.session_state.save_guard = False
+
 st.markdown("---")
 
 # Sticky Summary
@@ -1006,4 +836,4 @@ st.caption("Taxes are not modeled in this version.")
 st.caption("For any further queries please contact us at mfcustomercare@venturasecurities.com or +91 226754 7042")
 st.caption("DISCLAIMER: Ventura Securities Ltd. (Ventura) is a Stock Broker / Research Analyst / Portfolio Manager / Depository Participant duly registered with SEBI  and is also a Mutual Fund Distributor registered with the Association of Mutual Funds in India (AMFI) holding ARN No. 20936. Ventura provides incidental advice pertaining to Mutual Funds and their appropriateness and suitability. Ventura receives remuneration by way of commission from the Mutual Funds. All Mutual Funds are subject to market risks and you are requested to read all Scheme related documents carefully before investing. Past performance is not indicative of future returns . Nothing contained in this communication should be construed as an investment advice or recommendation to buy / sell / hold any investment product. You must determine on your own behalf, the merits and risks of any other investment product as well as its suitability for you.")
 st.markdown("---")
-st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.5.1</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:var(--muted); font-size:0.85rem;'>v8.6.0</div>", unsafe_allow_html=True)
