@@ -597,7 +597,7 @@ with k1:
         f"<div class='kpi'>"
         f"<div class='label'>Required corpus at retirement</div>"
         f"<div id='kpi1' class='value'>{fmt_money_indian(st.session_state.get('prev_F19', 0))}</div>"
-        f"<div class='sub'>Inflation-indexed lifetime need</div>"
+        f"<div class='sub'>Base need</div>"
         f"</div>", unsafe_allow_html=True,
     )
 with k2:
@@ -616,6 +616,17 @@ with k3:
         f"<div class='sub'>If you prefer a one-time investment</div>"
         f"</div>", unsafe_allow_html=True,
     )
+
+st.markdown(
+           """
+           <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem;
+           margin-top:10px;
+           margin-bottom:10px;'>
+        Either Monthly SIP or Lumpsum Today
+        </div>
+        """,
+        unsafe_allow_html=True
+        )
 
 # CountUp animations for the remaining KPIs and snapshot
 st_html(
