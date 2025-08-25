@@ -842,19 +842,6 @@ if save_clicked and not st.session_state.save_guard and not st.session_state.sav
 
 st.markdown("---")
 
-# Sticky Summary
-st.markdown(
-    f"""
-    <div class='sticky-summary'>
-      <div class='summary-grid'>
-        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{fmt_money_indian(F19)}</div></div>
-        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{fmt_money_indian(F21_display)}</div></div>
-        <div><div class='hint'>Coverage now</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{coverage*100:.1f}%</div></div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 st_html("""
 <script>
@@ -880,6 +867,21 @@ st_html("""
 })();
 </script>
 """, height=0)
+
+
+# Sticky Summary
+st.markdown(
+    f"""
+    <div class='sticky-summary'>
+      <div class='summary-grid'>
+        <div><div class='hint'>Corpus at retirement</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{fmt_money_indian(F19)}</div></div>
+        <div><div class='hint'>Monthly SIP</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{fmt_money_indian(F21_display)}</div></div>
+        <div><div class='hint'>Coverage now</div><div class='mono' style='font-weight:800; font-size:1.05rem;'>{coverage*100:.1f}%</div></div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # Version label + fixed-rate captions at the bottom
