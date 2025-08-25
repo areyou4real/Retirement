@@ -617,12 +617,7 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-st.markdown(""" <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem; margin-top:10px; margin-bottom:10px;'>
-        Either Monthly SIP or Lumpsum Today
-        </div>
-        """,
-        unsafe_allow_html=True
-        )
+st.markdown(""" <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem; margin-top:10px; margin-bottom:10px;'>Either Monthly SIP or Lumpsum Today </div> """, unsafe_allow_html=True)
 
 # CountUp animations for the remaining KPIs and snapshot
 st_html(
