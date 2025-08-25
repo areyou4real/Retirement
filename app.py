@@ -617,11 +617,7 @@ with k3:
         f"</div>", unsafe_allow_html=True,
     )
 
-st.markdown(
-           """
-           <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem;
-           margin-top:10px;
-           margin-bottom:10px;'>
+st.markdown(""" <div style='color:#e63946; font-weight:800; text-align:center;font-size:1.1rem; margin-top:10px; margin-bottom:10px;'>
         Either Monthly SIP or Lumpsum Today
         </div>
         """,
