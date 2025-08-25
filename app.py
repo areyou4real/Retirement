@@ -137,12 +137,38 @@ def inject_css():
           display: block;
           }
 
+          /* ====== IFRAME GAP FIX ====== */
+          div[data-testid="stIFrame"],
+          div[data-testid="stIFrame"] * {
+            margin:0 !important; padding:0 !important; height:0 !important; min-height:0 !important;
+            border:0 !important; overflow:hidden !important;
+          }
+          iframe.stIFrame[title="st.iframe"],
+          iframe[title^="streamlit-component"],
+          iframe[title*="st.iframe"] {
+            display:block !important; height:0 !important; min-height:0 !important; width:0 !important;
+            border:0 !important; margin:0 !important; padding:0 !important; overflow:hidden !important;
+            position:absolute !important; left:-10000px !important; top:auto !important;
+          }
+          div[data-testid="stElementContainer"] > iframe.stIFrame,
+          div[data-testid="stElementContainer"] > iframe[title^="streamlit-component"] {
+            display:block !important; height:0 !important; min-height:0 !important;
+          }
+          div[data-testid="stElementContainer"]:has(> iframe.stIFrame),
+          div[data-testid="stElementContainer"]:has(> iframe[title^="streamlit-component"]) {
+            margin:0 !important; padding:0 !important; height:0 !important; min-height:0 !important;
+            line-height:0 !important; border:0 !important; overflow:hidden !important;
+          }
+          div[data-testid="stElementContainer"]:has(> iframe) + div[data-testid="stElementContainer"] {
+            margin-top:0 !important; padding-top:0 !important;
+          }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 inject_css()
+
 
 import base64, mimetypes
 from pathlib import Path
@@ -827,6 +853,32 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+st_html("""
+<script>
+(function(){
+  const doc = window.parent?.document || document;
+  const iframes = Array.from(doc.querySelectorAll('iframe.stIFrame, iframe[title^="streamlit-component"], iframe[title*="st.iframe"]'));
+  for (const f of iframes) {
+    // Zero the iframe itself
+    Object.assign(f.style, {height:'0px', minHeight:'0', width:'0px', border:'0', margin:'0', padding:'0', overflow:'hidden', display:'block'});
+    // Walk up a few levels and collapse wrappers until the Streamlit element container
+    let p = f.parentElement, hops = 0;
+    while (p && hops < 5) {
+      Object.assign(p.style, {margin:'0', padding:'0', height:'0', minHeight:'0', border:'0', overflow:'hidden', lineHeight:'0'});
+      if (p.getAttribute('data-testid') === 'stElementContainer') break;
+      p = p.parentElement; hops++;
+    }
+    // Remove stray siblings used as spacers
+    const sib = p && p.nextElementSibling;
+    if (sib && sib.getAttribute('data-testid') === 'stElementContainer') {
+      if (sib.innerHTML.trim() === '') Object.assign(sib.style, {margin:'0', padding:'0', height:'0', minHeight:'0'});
+    }
+  }
+})();
+</script>
+""", height=0)
+
 
 # Version label + fixed-rate captions at the bottom
 st.markdown("---")
